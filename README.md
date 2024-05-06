@@ -45,19 +45,29 @@ https://medium.com/@SaphE/deploying-apache-spark-on-kubernetes-using-helm-charts
 https://github.com/kubeflow/spark-operator/tree/master
 
 
+Create a namespace for spark jobs
+
+`kubectl create namespace test-ns`
+
+create a service account
+
+```
+kubectl create serviceaccount spark --namespace=test-ns
+
+kubectl get serviceaccount -n test-ns
+
+kubectl create clusterrolebinding spark-role --clusterrole=edit --serviceaccount=test-ns:spark --namespace=test-ns
+```
+
+
+Install the operator, create namespace if it doesnt exist, enable the webhook, and set a namespace for jobs
+
 ```
 helm repo add spark-operator https://kubeflow.github.io/spark-operator
 
 helm repo update
 
-helm install my-release spark-operator/spark-operator --namespace spark-operator --create-namespace --set webhook.enable=true 
-
-NAME: my-release
-LAST DEPLOYED: Mon May  6 16:03:02 2024
-NAMESPACE: spark-operator
-STATUS: deployed
-REVISION: 1                                                                                             -operator --create-namespace --set webhook.enable=true 
-TEST SUITE: None
+helm install my-release spark-operator/spark-operator --namespace spark-operator --create-namespace --set webhook.enable=true --set sparkJobnamespace=test-ns
 
 helm status --namespace spark-operator my-release
 
@@ -70,14 +80,34 @@ Submit the spark job from this repo
 ```
 kubectl apply -f .\spark\spark-pi.yaml
 
-kubectl describe sparkapplication --namespace=spark-operator
-```
+kubectl get sparkapplications spark-pi -n test-ns
+
+kubectl describe sparkapplication --namespace=test-ns
+
+...
+...
+Events:
+  Type    Reason                     Age                  From            Message
+  ----    ------                     ----                 ----            -------
+  Normal  SparkApplicationAdded      2m20s                spark-operator  SparkApplication spark-pi was added, enqueuing it for submission
+  Normal  SparkApplicationSubmitted  2m14s                spark-operator  SparkApplication spark-pi was submitted successfully
+  Normal  SparkDriverRunning         2m11s                spark-operator  Driver spark-pi-driver is running
+  Normal  SparkExecutorPending       2m2s                 spark-operator  Executor [spark-pi-b8d2788f4ebba73c-exec-1] is pending
+  Normal  SparkExecutorRunning       117s                 spark-operator  Executor [spark-pi-b8d2788f4ebba73c-exec-1] is running
+  Normal  SparkExecutorCompleted     107s                 spark-operator  Executor [spark-pi-b8d2788f4ebba73c-exec-1] completed
+  Normal  SparkDriverCompleted       106s                 spark-operator  Driver spark-pi-driver completed
+  Normal  SparkApplicationCompleted  106s (x2 over 106s)  spark-operator  SparkApplication spark-pi completed
+
+kubectl describe pod spark-pi-driver -n test-ns
 
 ```
-  Warning  Failed       21s (x5 over 102s)  kubelet, docker-desktop  Error: ImagePullBackOff
-  Normal   Pulling      7s (x4 over 103s)   kubelet, docker-desktop  Pulling image "gcr.io/spark-operator/spark:v3.1.1"
-  Warning  Failed       6s (x4 over 102s)   kubelet, docker-desktop  Failed to pull image "gcr.io/spark-operator/spark:v3.1.1": Error response from daemon: manifest for gcr.io/spark-operator/spark:v3.1.1 not found: manifest unknown: Failed to fetch "v3.1.1" from request "/v2/spark-operator/spark/manifests/v3.1.1".
-  Warning  Failed       6s (x4 over 102s)   kubelet, docker-desktop  Error: ErrImagePull
+## check the spark logs
 
-```
+`kubectl get pods -n test-ns`
+
+can see the driver pod is there in completed state
+
+check its logs
+
+`kubectl logs spark-pi-driver -n test-ns`
 
