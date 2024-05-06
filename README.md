@@ -111,3 +111,14 @@ check its logs
 
 `kubectl logs spark-pi-driver -n test-ns`
 
+kubectl port-forward svc/spark-pi-ui-svc 4040:4040 -n test-ns
+
+http://localhost:4040/
+
+run job and quickly port forward
+
+kubectl delete -f .\spark\spark-pi.yaml
+kubectl apply -f .\spark\spark-pi.yaml
+kubectl port-forward svc/spark-pi-ui-svc 4040:4040 -n test-ns
+
+
