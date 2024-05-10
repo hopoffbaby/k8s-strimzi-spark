@@ -97,3 +97,19 @@ kubectl apply -f .\spark\spark-pi.yaml
 kubectl port-forward svc/spark-pi-ui-svc 4040:4040 -n test-ns
 
 
+## Queuing
+
+# basic namespace quota enforcement
+
+Basic namespace quota enforcement will just fail jobs if there is not enough resource to start them
+
+when installing the spark-operator, set `enableResourceQuotaEnforcement=true`. This will make spark operator aware of quota restrictions on the namespace. 
+
+Combine this with `webhook-fail-on-error=true` means that if the job cant run, it will be put into a terminal state of `FAILED`
+
+`kubectl describe quota --all-namespaces`
+
+`kubectl get sparkapplication --namespace=test-ns`
+
+# Advanced scheduling with volcano
+
