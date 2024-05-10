@@ -10,7 +10,7 @@ $templatePath = "spark-pi.yaml"
     $yamlContent = Get-Content -Path $templatePath -Raw
     
     # Replace the name in the YAML content
-    $modifiedContent = $yamlContent -replace 'name: spark-pi-1', "name: $newName"
+    $modifiedContent = $yamlContent -replace 'name: spark-pi', "name: $newName"
     
     # Write the modified content to a new YAML file
     $modifiedContent | Out-File -FilePath $newFilePath
