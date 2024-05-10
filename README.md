@@ -40,38 +40,13 @@ open browser
 
 ## Install Spark Operator
 
+
 https://medium.com/@SaphE/deploying-apache-spark-on-kubernetes-using-helm-charts-simplified-cluster-management-and-ee5e4f2264fd
 
 https://github.com/kubeflow/spark-operator/tree/master
 
 
-Create a namespace for spark jobs
-
-`kubectl create namespace test-ns`
-
-create a service account
-
-```
-kubectl create serviceaccount spark --namespace=test-ns
-
-kubectl get serviceaccount -n test-ns
-
-kubectl create clusterrolebinding spark-role --clusterrole=edit --serviceaccount=test-ns:spark --namespace=test-ns
-```
-
-
-Install the operator, create namespace if it doesnt exist, enable the webhook, and set a namespace for jobs
-
-```
-helm repo add spark-operator https://kubeflow.github.io/spark-operator
-
-helm repo update
-
-helm install my-release spark-operator/spark-operator --namespace spark-operator --create-namespace --set webhook.enable=true --set sparkJobnamespace=test-ns
-
-helm status --namespace spark-operator my-release
-
-```
+run the `spark/bootstrapSpark.ps1` script
 
 ## Run a job
 

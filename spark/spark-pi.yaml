@@ -9,6 +9,7 @@ spec:
   image: "spark:3.5.0"
   imagePullPolicy: Always
   mainClass: org.apache.spark.examples.SparkPi
+  arguments: ["100000"]
   mainApplicationFile: "local:///opt/spark/examples/jars/spark-examples_2.12-3.5.0.jar"
   sparkVersion: "3.5.0"
   sparkUIOptions:
@@ -23,7 +24,7 @@ spec:
         type: Directory
   driver:
     cores: 1
-    coreLimit: "1200m"
+    coreLimit: "1000m"
     memory: "512m"
     labels:
       version: 3.5.0
@@ -32,8 +33,9 @@ spec:
       - name: "test-volume"
         mountPath: "/tmp"
   executor:
-    cores: 1
-    instances: 1
+    #cores: 0.5
+    coreLimit: "1000m"
+    instances: 2
     memory: "512m"
     labels:
       version: 3.5.0
