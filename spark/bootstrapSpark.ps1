@@ -24,8 +24,8 @@ helm repo update
 helm install my-release spark-operator/spark-operator --namespace spark-operator --create-namespace `
     --set webhook.enable=true `
     --set sparkJobNamespace=test-ns `
-    --set enableBatchScheduler=true `
-    --set enableResourceQuotaEnforcement=true
+    --set enableResourceQuotaEnforcement=true `
+    --set enableBatchScheduler=false
 
 # Output a completion message
 Write-Host "Spark operator has been successfully deployed on Kubernetes."
