@@ -2,9 +2,13 @@
 
 using docker desktop, rancher desktop or k3s
 
+## k3s
+### install
 install k3s
 
 sudo curl -sfL https://get.k3s.io | sh -
+
+### uninstsall
 
 sudo k3s-uninstall.sh
 
