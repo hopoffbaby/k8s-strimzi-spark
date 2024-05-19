@@ -72,6 +72,88 @@ verify the number of brokers with
 sudo kubectl -n kafka run kafka-api-versions -ti --image=quay.io/strimzi/kafka:0.40.0-kafka-3.7.0 --rm=true --restart=Never -- bin/kafka-broker-api-versions.sh --bootstrap-server my-cluster-kafka-bootstrap:9092
 ```
 
+# Cruise control
+
+## deploy cruise control
+
+Strimzi is able to deploy a instance of cruise control (GUI is not supported by default - https://strimzi.io/blog/2023/01/11/hacking-for-cruise-control-ui/).
+
+The most basic configuration involves adding `cruiseControl: {}` to the `kafka` manifest. The strimzi cluster must have at least 2 brokers, otherwise it will not start the cluster (no point having cruise control if there isnt more than 1 broker to balance between)
+
+Additional rules and actions can be configured:
+
+https://strimzi.io/blog/2020/06/15/cruise-control/
+
+## request an optimization proposal
+
+Cruise control will recommend optimizations based on the rules configure. To request a proposal, apply a `KafkaRebalance` resource
+
+`kubectl apply -f kafkaRebalance.yaml -n kafka`
+
+to see the proposal:
+
+`kubectl describe kafkarebalance my-rebalance -n kafka`
+
+Initially this shows a perfect cluster as there is no data. To make it interesting, run the benchmark tool, and then add an additional broker to the cluster, delete the `KafkaRebalance` resource and apply again for force another proposal.
+
+now showing a big partition and leader skew
+
+Remove the `cruiseControl: {}` line from the kafka manifest and apply, then add it again.
+
+wait for brokers to be restarted and cruise control to settle down. New recommendation is then provided
+
+```
+kubectl describe kafkarebalance my-rebalance -n kafka
+...
+...
+Status:
+  Conditions:
+    Last Transition Time:  2024-05-19T19:11:23.784304280Z
+    Status:                True
+    Type:                  ProposalReady
+  Observed Generation:     1
+  Optimization Result:
+    After Before Load Config Map:  my-rebalance
+    Data To Move MB:               0
+    Excluded Brokers For Leadership:
+    Excluded Brokers For Replica Move:
+    Excluded Topics:
+    Intra Broker Data To Move MB:         0
+    Monitored Partitions Percentage:      100
+    Num Intra Broker Replica Movements:   0
+    Num Leader Movements:                 0
+    Num Replica Movements:                27
+    On Demand Balancedness Score After:   83.16903091432891
+    On Demand Balancedness Score Before:  78.70730590478658
+    Provision Recommendation:             [RackAwareGoal] Remove at least 1 rack with brokers. [ReplicaDistributionGoal] Remove at least 3 brokers.
+    Provision Status:                     OVER_PROVISIONED
+    Recent Windows:                       1
+  Session Id:                             d5a5447e-2e11-4ba7-96e1-ebad2817854b
+Events:                                   <none>
+```
+
+this then provides some suggestions. in this case will move some replicas, and suggests the size of the cluster is over_provisioned suggest it has more resource assigned than is required.
+
+to trigger the optimization you need to annotate the `KafkaRebalance` resource with `approve`
+
+```
+kubectl annotate kafkarebalance my-rebalance strimzi.io/rebalance=approve -n kafka
+```
+
+You can then check the progress by describing the resource
+
+```
+kubectl describe kafkarebalance my-rebalance -n kafka
+```
+
+you can also request that cruise control refresh its proposal
+
+```
+kubectl annotate kafkarebalance my-rebalance strimzi.io/rebalance=refresh -n kafka
+```
+
+Note: be careful downsizing clusters as they may fail if replicas are assigned to brokers. TBC on process to do this.
+
 # Install Kafka UI
 
 Install kafka-ui using helm and the repo kafka-ui-values.yaml file
