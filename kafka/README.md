@@ -13,6 +13,8 @@ sudo kubectl create -f 'https://strimzi.io/install/latest?namespace=kafka' -n ka
 wait for it to be ready 
 
 ```
+# kubectl wait deployment/strimzi-cluster-operator --for=condition=Ready --timeout=300s -n kafka
+
 sudo kubectl get pod -n kafka --watch
 
 sudo kubectl logs deployment/strimzi-cluster-operator -n kafka -f
@@ -72,12 +74,20 @@ sudo kubectl -n kafka run kafka-api-versions -ti --image=quay.io/strimzi/kafka:0
 
 # Install Kafka UI
 
-Install kafka-ui using helm and the repo values.yaml file
+Install kafka-ui using helm and the repo kafka-ui-values.yaml file
 
-helm repo add kafka-ui https://provectus.github.io/kafka-ui-charts
+```
+helm repo add appscode https://charts.appscode.com/stable/
 
-helm install kafka-ui kafka-ui/kafka-ui --set envs.config.KAFKA_CLUSTERS_0_NAME=local --set envs.config.KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=my-cluster-kafka-bootstrap:9092
+helm install my-kafka-ui appscode/kafka-ui --version 2024.4.27 --values kafka-ui-values.yaml -n kafka
+```
 
-kubectl port-forward svc/kafka-ui 8080:80
+Make sure to install into the same namespace kafka was installed to, otherwise change the DNS namespace accordingly
+
+```
+kubectl port-forward svc/my-kafka-ui 8080:80 -n kafka
+```
 
 open browser
+
+`http:\\localhost:8080`
