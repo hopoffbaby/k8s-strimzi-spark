@@ -47,8 +47,11 @@ sudo kubectl -n kafka run kafka-consumer -ti --image=quay.io/strimzi/kafka:0.40.
 
 # Benchmark
 ```
-sudo kubectl -n kafka run kafka-benchmark-producer -ti --image=quay.io/strimzi/kafka:0.40.0-kafka-3.7.0 --rm=true --restart=Never -- bin/kafka-producer-perf-test.sh --topic my-topic --num-records 1000000 --record-size 400 --throughput -1 --producer-props bootstrap.servers=my-cluster-kafka-bootstrap:9092
+sudo kubectl -n kafka run kafka-benchmark-producer -ti --image=quay.io/strimzi/kafka:0.40.0-kafka-3.7.0 --rm=true --restart=Never -- bin/kafka-producer-perf-test.sh --topic my-topic --num-records 1000000 --record-size 400 --throughput 250000 --producer-props bootstrap.servers=my-cluster-kafka-bootstrap:9092
 ```
+
+`while ($true) { Clear-Host; kubectl top pods --sort-by=cpu -n kafka; Start-Sleep -Seconds 1 }`
+
 
 ## Results
 
