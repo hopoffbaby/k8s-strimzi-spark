@@ -10,15 +10,28 @@ A collection of examples for `Strimzi`/`Kafka`, `Spark`, and `Volcano`
 - [x] Benchmark perfomace
 - [x] Deploy Kafka UI
 
-- [ ] Rack awareness
-- [ ] Monitoring
+
+- [ ] Topic compression
+- [ ] Backup / restore
 - [ ] OIDC
+- [ ] Rack awareness
+
+- [ ] Monitoring
 - [x] Cruise Control
 - [ ] Quotas
 - [ ] Retention policies
-- [ ] Topic compression
+- [ ] Scale up/down
+
 - [ ] Mirror maker
-- [ ] Backup / restore
 - [ ] autoscaling brokers
 - [ ] Karapace deployment
 - [ ] Karapace security
+
+## VAP emulator
+
+- [ ] Object input
+- [ ] Object output
+- [ ] Auto scaling
+- [ ] ffmpeg process
+- [ ] Get args from kafka
+
