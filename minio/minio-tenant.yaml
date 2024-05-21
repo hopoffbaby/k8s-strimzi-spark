@@ -1,0 +1,75 @@
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  name: tenant-name
+  namespace: minio-operator
+spec:
+  configuration:
+    name: tenant-name-env-configuration
+  credsSecret:
+    name: tenant-name-secret
+  exposeServices:
+    console: true
+    minio: true
+  features: {}
+  imagePullSecret: {}
+  mountPath: /export
+  pools:
+  - affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: v1.min.io/tenant
+              operator: In
+              values:
+              - tenant-name
+            - key: v1.min.io/pool
+              operator: In
+              values:
+              - pool-0
+          topologyKey: kubernetes.io/hostname
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      runAsGroup: 1000
+      runAsNonRoot: true
+      runAsUser: 1000
+      seccompProfile:
+        type: RuntimeDefault
+    name: pool-0
+    resources:
+      limits:
+        cpu: "2"
+        memory: 4Gi
+      requests:
+        cpu: "1"
+        memory: 2Gi
+    runtimeClassName: ""
+    securityContext:
+      fsGroup: 1000
+      fsGroupChangePolicy: OnRootMismatch
+      runAsGroup: 1000
+      runAsNonRoot: true
+      runAsUser: 1000
+    servers: 1
+    volumeClaimTemplate:
+      metadata:
+        name: data
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: "10737418240"
+        storageClassName: hostpath
+      status: {}
+    volumesPerServer: 1
+  requestAutoCert: true
+  users:
+  - name: tenant-name-user-0
+
+
+

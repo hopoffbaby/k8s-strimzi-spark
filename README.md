@@ -27,6 +27,11 @@ A collection of examples for `Strimzi`/`Kafka`, `Spark`, and `Volcano`
 - [ ] Karapace deployment
 - [ ] Karapace security
 
+## Minio
+
+- [ ] single node single disk deploy to k8s
+- [ ] bucket notifications into kafka
+
 ## VAP emulator
 
 - [ ] Object input
