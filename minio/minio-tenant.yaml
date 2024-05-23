@@ -1,3 +1,16 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tenant-name-env-configuration
+  namespace: minio-operator
+  labels:
+    v1.min.io/tenant: tenant-name
+type: Opaque
+data:
+  config.env: ZXhwb3J0IE1JTklPX05PVElGWV9LQUZLQV9FTkFCTEVfUFJJTUFSWT0ib24iDQpleHBvcnQgTUlOSU9fTk9USUZZX0tBRktBX0JST0tFUlNfUFJJTUFSWT0ibXktY2x1c3Rlci1rYWZrYS1ib290c3RyYXAua2Fma2Euc3ZjLmNsdXN0ZXIubG9jYWw6OTA5MiINCmV4cG9ydCBNSU5JT19OT1RJRllfS0FGS0FfVE9QSUNfUFJJTUFSWT0ibWluaW8iDQpleHBvcnQgTUlOSU9fUk9PVF9VU0VSPSJtaW5pbyINCmV4cG9ydCBNSU5JT19ST09UX1BBU1NXT1JEPSJwYXNzd29yZCI=
+
+---
+
 apiVersion: minio.min.io/v2
 kind: Tenant
 metadata:
@@ -70,6 +83,3 @@ spec:
   requestAutoCert: true
   users:
   - name: tenant-name-user-0
-
-
-
