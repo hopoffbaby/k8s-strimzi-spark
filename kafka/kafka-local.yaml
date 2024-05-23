@@ -1,18 +1,19 @@
 apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
 metadata:
-  name: my-cluster
+  name: my-cluster-local
 spec:
   kafka:
     version: 3.7.0
-    replicas: 2
+    replicas: 1
     resources:
-      requests:
-        memory: 350Mi
-        cpu: 100m
-      limits:
-        memory: 500Mi
-        cpu: 1
+      {}
+      # requests:
+      #   memory: 350Mi
+      #   cpu: 100m
+      # limits:
+      #   memory: 500Mi
+      #   cpu: 1
     listeners:
       - name: plain
         port: 9092
@@ -35,25 +36,19 @@ spec:
       - id: 0
         type: persistent-claim
         size: 100Gi
-        deleteClaim: false
+        deleteClaim: true
   zookeeper:
     replicas: 1
     resources:
-      requests:
-        memory: 450Mi
-        cpu: 20m
+      {}
+      # requests:
+      #   memory: 450Mi
+      #   cpu: 20m
     storage:
       type: persistent-claim
       size: 100Gi
-      deleteClaim: false
+      deleteClaim: true
   entityOperator:
     topicOperator: {}
     userOperator: {}
-  cruiseControl:
-    resources:
-      requests:
-        memory: 400Mi
-        cpu: 50m
-      limits:
-        memory: 1Gi
-        cpu: 1
+  # cruiseControl: {}

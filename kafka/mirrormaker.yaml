@@ -1,0 +1,38 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaMirrorMaker2
+metadata:
+  name: my-mirror-maker-2
+spec:
+  version: 3.7.0
+  replicas: 1
+  connectCluster: "my-cluster-remote" # Must be the target custer
+  clusters:
+  - alias: "my-cluster-local" # Source cluster
+    bootstrapServers: my-cluster-local-kafka-bootstrap:9092
+  - alias: "my-cluster-remote" # Target cluster
+    bootstrapServers: my-cluster-remote-kafka-bootstrap:9092
+    config:
+      # -1 means it will use the default replication factor configured in the broker
+      config.storage.replication.factor: -1
+      offset.storage.replication.factor: -1
+      status.storage.replication.factor: -1
+  mirrors:
+  - sourceCluster: "my-cluster-local"
+    targetCluster: "my-cluster-remote"
+    sourceConnector:
+      tasksMax: 1
+      config:
+        # -1 means it will use the default replication factor configured in the broker
+        replication.factor: -1
+        offset-syncs.topic.replication.factor: -1
+        sync.topic.acls.enabled: "false"
+        refresh.topics.interval.seconds: 60
+    checkpointConnector:
+      tasksMax: 1
+      config:
+        # -1 means it will use the default replication factor configured in the broker
+        checkpoints.topic.replication.factor: -1
+        sync.group.offsets.enabled: "false"
+        refresh.groups.interval.seconds: 60
+    topicsPattern: ".*"
+    groupsPattern: ".*"

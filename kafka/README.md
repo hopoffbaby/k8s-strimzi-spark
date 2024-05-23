@@ -176,3 +176,10 @@ kubectl port-forward svc/my-kafka-ui 8080:80 -n kafka
 open browser
 
 `http:\\localhost:8080`
+
+# Mirrormaker
+
+Deploy 2 kafka clusters `my-cluster` and `my-cluster-remote`
+
+apply the mirrormaker.yaml file
+

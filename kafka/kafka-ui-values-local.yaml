@@ -24,8 +24,8 @@ existingConfigMap: ""
 yamlApplicationConfig:
   kafka:
     clusters:
-      - name: yaml
-        bootstrapServers: my-cluster-kafka-bootstrap:9092
+      - name: local
+        bootstrapServers: my-cluster-local-kafka-bootstrap:9092
   # spring:
   #   security:
   #     oauth2:
