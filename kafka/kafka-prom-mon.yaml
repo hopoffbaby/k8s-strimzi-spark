@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mirror-maker-2-monitor
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: strimzi
+  endpoints:
+    - port: http-metrics
+      interval: 15s
+      path: /metrics
+  namespaceSelector:
+    matchNames:
+      - kafka

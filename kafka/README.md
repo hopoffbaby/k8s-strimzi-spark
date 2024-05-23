@@ -34,7 +34,7 @@ sudo kubectl wait kafka/my-cluster --for=condition=Ready --timeout=300s -n kafka
 IN TERMINAL 1
 
 ```
-sudo kubectl -n kafka run kafka-producer -ti --image=quay.io/strimzi/kafka:0.40.0-kafka-3.7.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic my-topic
+sudo kubectl -n kafka run kafka-producer -ti --image=quay.io/strimzi/kafka:0.40.0-kafka-3.7.0 --rm=true --restart=Never -- bin/kafka-console-producer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic my-topic --producer-property batch.size=400 --producer-property linger.ms=1 --producer-property acks=1
 ```
 
 ## Consume messages
@@ -179,7 +179,18 @@ open browser
 
 # Mirrormaker
 
-Deploy 2 kafka clusters `my-cluster` and `my-cluster-remote`
+Deploy 2 kafka clusters `my-cluster-local` and `my-cluster-remote`
 
-apply the mirrormaker.yaml file
+apply the mirrormaker.yaml file, which also includes config to export metrics
 
+## deploy prometheus
+
+kubectl create namespace monitoring
+
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+helm repo update
+
+helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring
+
+kubectl apply -f kafka-prom-mon.yml
