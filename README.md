@@ -22,7 +22,7 @@ A collection of examples for `Strimzi`/`Kafka`, `Spark`, and `Volcano`
 - [ ] Retention policies
 - [ ] Scale up/down
 
-- [ ] Mirror maker
+- [x] Mirror maker
 - [ ] autoscaling brokers
 - [ ] Karapace deployment
 - [ ] Karapace security
