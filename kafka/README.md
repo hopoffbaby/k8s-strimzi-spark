@@ -194,3 +194,13 @@ helm repo update
 helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring
 
 kubectl apply -f kafka-prom-mon.yml
+
+# kafka backup
+
+https://hub.docker.com/r/itadventurer/kafka-backup
+
+sudo kubectl -n kafka run kafka-backup -ti --image=itadventurer/kafka-backup:v0.1.1
+ --rm=true --restart=Never -- backup-standalone.sh --bootstrap-server my-cluster-local-kafka-bootstrap:9092 --target-dir /kafka-backup/ --topics 'my-topic'
+
+
+docker run -it --rm itadventurer/kafka-backup:v0.1.1 backup-standalone.sh --bootstrap-server kafka:9092 --target-dir /kafka-backup/ --topics 'topic1,topic2'
