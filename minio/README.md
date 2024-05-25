@@ -1,28 +1,5 @@
 # Install MinIO operator
 
-## Install krew
-
-(as admin)
-
-https://krew.sigs.k8s.io/docs/user-guide/setup/install/#windows
-
-`$env:PATH += ";$($env:USERPROFILE)\.krew\bin"`
-
-`kubectl krew`
-
-## Install MinIO krew plugin
-
-(as admin)
-
-```
-kubectl krew update
-kubectl krew install minio
-```
-
-```
-kubectl minio version
-```
-
 ## Install with Helm
 
 ```

@@ -30,7 +30,7 @@ A collection of examples for `Strimzi`/`Kafka`, `Spark`, and `Volcano`
 ## Minio
 
 - [x] single node single disk deploy to k8s
-- [ ] bucket notifications into kafka
+- [x] bucket notifications into kafka
 
 ## VAP emulator
 
