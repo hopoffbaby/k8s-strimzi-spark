@@ -1,0 +1,44 @@
+{
+	"auditVersion": "1.weka",
+	"wekaInfo": {
+		"version": "4.2.8.66",
+		"release": "4.2.8.66",
+		"clusterGUID": "d5adf63c-054e-48cf-9f58-7e076d6fe222",
+		"clusterName": "mercedes-amg-testdev",
+		"serverIP": "172.26.190.105",
+		"serverName": "devlbnode2-1.dev.weka.barf1.com"
+	},
+	"deploymentid": "b143574a-767c-4069-a4a5-5d7262e0ea40",
+	"time": "2024-05-28T11:38:28.718863163Z",
+	"api": {
+		"name": "GetBucketLocation",
+		"bucket": "probe-bucket-sign-pc1b3aplc3se",
+		"status": "Not Found",
+		"statusCode": 404,
+		"timeToFirstByte": "388653ns",
+		"timeToResponse": "415302ns"
+	},
+	"remotehost": "127.0.0.1",
+	"requestID": "17D3A418A5574047",
+	"userAgent": "MinIO (linux; amd64) minio-go/v7.0.11",
+	"requestQuery": {
+		"location": ""
+	},
+	"requestHeader": {
+		"Authorization": "AWS4-HMAC-SHA256 Credential=cSx5l3TYycket7rJHfqZFRFz9GYHP4HBQUB03KUOeKO5SlonITtF2dqvndauBXSRl1I00AOMx4nWttD8TslwDjd4E2NxJ9uR4QBps60AFSOfE6ms5s9NecBLDByxRTlz/20240528/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=00b1695a5fb45ff85250181b92f44843c9ca4e90cf002c2e9e59c3fb49a842dd",
+		"User-Agent": "MinIO (linux; amd64) minio-go/v7.0.11",
+		"X-Amz-Content-Sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+		"X-Amz-Date": "20240528T113828Z"
+	},
+	"responseHeader": {
+		"Accept-Ranges": "bytes",
+		"Content-Length": "333",
+		"Content-Security-Policy": "block-all-mixed-content",
+		"Content-Type": "application/xml",
+		"ETag": "",
+		"Server": "MinIO",
+		"Vary": "Origin",
+		"X-Amz-Request-Id": "17D3A418A5574047",
+		"X-Xss-Protection": "1; mode=block"
+	}
+}
