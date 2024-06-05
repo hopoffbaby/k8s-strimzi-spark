@@ -1,0 +1,47 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Can be provisioned faster by calling "$env:VAGRANT_EXPERIMENTAL="disks"; vagrant up node<x> form multiple terminals to make parallel"
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+  
+  #config.vm.network "public_network"
+  config.vm.synced_folder "../data", "/vagrant_data"
+  config.vm.box_download_insecure = true
+  
+
+  (1..2).each do |i|
+    config.vm.define "vm#{i}" do |node|
+      node.vm.network "private_network", ip: "10.10.10.1#{i}"
+      node.vm.network "public_network", bridge: "PANGP Virtual Ethernet Adapter Secure"
+      node.vm.hostname = "vm#{i}"
+
+      # Export VAGRANT_EXPERIMENTAL="disks"
+      node.vm.disk :disk, name: "disk-1", size: "10GB"
+      node.vm.disk :disk, name: "disk-2", size: "10GB"
+      node.vm.disk :disk, name: "disk-3", size: "10GB"
+      node.vm.disk :disk, name: "disk-4", size: "10GB"
+    end
+  end
+
+  config.vm.provider "virtualbox" do |vb|
+    # Display the VirtualBox GUI when booting the machine
+    vb.gui = false
+  
+    # Customize the amount of memory on the VM:
+    vb.memory = "3000"
+    vb.cpus = 4
+  end
+
+  config.vm.provision "prereq", type: "shell", inline: <<-SHELL
+    yes vagrant | passwd root
+
+    echo "10.10.10.11 vm1 vm1" >> /etc/hosts
+    echo "10.10.10.12 vm2 vm2" >> /etc/hosts
+    # echo "10.10.10.13 vm3 vm3" >> /etc/hosts
+    # echo "10.10.10.14 vm4 vm4" >> /etc/hosts
+
+    sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config; sudo systemctl restart sshd;
+  SHELL
+end
