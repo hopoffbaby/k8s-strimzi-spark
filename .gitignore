@@ -1,1 +1,3 @@
 minio/vagrant/.vagrant/
+minio/data/id_rsa
+minio/data/id_rsa.pub
