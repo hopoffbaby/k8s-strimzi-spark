@@ -1,12 +1,11 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# Can be provisioned faster by calling "$env:VAGRANT_EXPERIMENTAL="disks"; vagrant up node<x> form multiple terminals to make parallel"
+# Can be provisioned faster by calling "$env:VAGRANT_EXPERIMENTAL="disks"; vagrant up node<x> from multiple terminals to make parallel"
 
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/jammy64"
   
-  #config.vm.network "public_network"
   config.vm.synced_folder "../data", "/vagrant_data"
   config.vm.box_download_insecure = true
 
@@ -61,28 +60,45 @@ Vagrant.configure("2") do |config|
         chmod 600 /root/.ssh/id_rsa /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys
       SHELL
 
-      # node.vm.provision "install_k3s", type: "shell", inline: <<-SHELL
-      #   # Install k3s and kubectl on vm1 (master)
-      #   if [ "$(hostname)" == "vm1" ]; then
-      #     curl -sfL https://get.k3s.io | sh -
-      #     sudo cp /etc/rancher/k3s/k3s.yaml /home/vagrant/.kube/config
-      #     sudo chown vagrant:vagrant /home/vagrant/.kube/config
-      #   fi
+      node.vm.provision "setup_curlrc", type: "shell", inline: <<-SHELL
+        # Add 'insecure' option to ~/.curlrc for both vagrant and root users
+        echo insecure >> /home/vagrant/.curlrc
+        echo insecure >> /root/.curlrc
+      SHELL
 
-      #   # Install k3s and kubectl on vm2 (node) and join to the cluster
-      #   if [ "$(hostname)" == "vm2" ]; then
-      #     until ping -c 1 10.10.10.11; do
-      #       echo "Waiting for vm1 to start..."
-      #       sleep 2
-      #     done
-      #     export K3S_TOKEN=$(ssh -o StrictHostKeyChecking=no -i /home/vagrant/.ssh/id_rsa root@10.10.10.11 cat /var/lib/rancher/k3s/server/node-token)
-      #     curl -sfL https://get.k3s.io | K3S_URL=https://10.10.10.11:6443 K3S_TOKEN=$K3S_TOKEN sh -
-      #     sudo mkdir -p /home/vagrant/.kube
-      #     ssh -o StrictHostKeyChecking=no -i /home/vagrant/.ssh/id_rsa root@10.10.10.11:/etc/rancher/k3s/k3s.yaml /home/vagrant/.kube/config
-      #     sudo sed -i 's/127.0.0.1/10.10.10.11/' /home/vagrant/.kube/config
-      #     sudo chown vagrant:vagrant /home/vagrant/.kube/config
-      #   fi
-      # SHELL
+      node.vm.provision "install_k3s", type: "shell", inline: <<-SHELL
+        # Install k3s and kubectl on vm1 (master)
+        if [ "$(hostname)" == "vm1" ]; then
+          curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--node-external-ip 10.10.10.11" sh -
+          # mkdir -p /home/vagrant/.kube
+          # sudo cp /etc/rancher/k3s/k3s.yaml /home/vagrant/.kube/config
+          # sudo chown vagrant:vagrant /home/vagrant/.kube/config
+          until sudo kubectl get nodes; do
+            echo "Waiting for k3s to start..."
+            sleep 2
+          done
+        fi
+
+        # Install k3s and kubectl on vm2 (node) and join to the cluster
+        if [ "$(hostname)" != "vm1" ]; then
+          until ping -c 1 10.10.10.11; do
+            echo "Waiting for vm1 to start..."
+            sleep 2
+          done
+
+          # while [ ! -f /var/lib/rancher/k3s/server/node-token ]; do
+          #   echo "Waiting for k3s on vm1 to generate node-token..."
+          #   sleep 2
+          # done
+
+          export K3S_TOKEN=$(ssh -o StrictHostKeyChecking=no -i /home/vagrant/.ssh/id_rsa root@vm1 cat /var/lib/rancher/k3s/server/node-token)
+          curl -sfL https://get.k3s.io | K3S_URL=https://vm1:6443 K3S_TOKEN=$K3S_TOKEN sh -
+          # sudo mkdir -p /home/vagrant/.kube
+          # sshpass -p 'vagrant' scp -o StrictHostKeyChecking=no -i /home/vagrant/.ssh/id_rsa root@10.10.10.11:/etc/rancher/k3s/k3s.yaml /home/vagrant/.kube/config
+          # sudo sed -i 's/127.0.0.1/10.10.10.11/' /home/vagrant/.kube/config
+          # sudo chown vagrant:vagrant /home/vagrant/.kube/config
+        fi
+      SHELL
     end
   end
 end
