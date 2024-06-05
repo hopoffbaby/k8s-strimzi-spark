@@ -60,20 +60,24 @@ Vagrant.configure("2") do |config|
         chmod 600 /root/.ssh/id_rsa /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys
       SHELL
 
-      node.vm.provision "setup_curlrc", type: "shell", inline: <<-SHELL
+      node.vm.provision "fix_bs_firewall", type: "shell", inline: <<-SHELL
         # Add 'insecure' option to ~/.curlrc for both vagrant and root users
+        # bullshit firewall issues .....
         echo insecure >> /home/vagrant/.curlrc
         echo insecure >> /root/.curlrc
       SHELL
 
       node.vm.provision "install_k3s", type: "shell", inline: <<-SHELL
+        mkdir -p /etc/rancher/k3s/
+        cp /vagrant_data/registries.yaml /etc/rancher/k3s/registries.yaml
+      
         # Install k3s and kubectl on vm1 (master)
         if [ "$(hostname)" == "vm1" ]; then
           curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--node-external-ip 10.10.10.11" sh -
           # mkdir -p /home/vagrant/.kube
           # sudo cp /etc/rancher/k3s/k3s.yaml /home/vagrant/.kube/config
           # sudo chown vagrant:vagrant /home/vagrant/.kube/config
-          until sudo kubectl get nodes; do
+          until sudo kubectl get all -n kube-system; do
             echo "Waiting for k3s to start..."
             sleep 2
           done
@@ -97,6 +101,22 @@ Vagrant.configure("2") do |config|
           # sshpass -p 'vagrant' scp -o StrictHostKeyChecking=no -i /home/vagrant/.ssh/id_rsa root@10.10.10.11:/etc/rancher/k3s/k3s.yaml /home/vagrant/.kube/config
           # sudo sed -i 's/127.0.0.1/10.10.10.11/' /home/vagrant/.kube/config
           # sudo chown vagrant:vagrant /home/vagrant/.kube/config
+        fi
+      SHELL
+
+      node.vm.provision "install_directpv", type: "shell", inline: <<-SHELL
+        if [ "$(hostname)" == "vm1" ]; then
+          # Download DirectPV plugin.
+          release=$(curl -sfL "https://api.github.com/repos/minio/directpv/releases/latest" | awk '/tag_name/ { print substr($2, 3, length($2)-4) }')
+          curl -fLo kubectl-directpv https://github.com/minio/directpv/releases/download/v${release}/kubectl-directpv_${release}_linux_amd64
+          # Make the binary executable.
+          chmod a+x kubectl-directpv
+          # install directpv onto cluster
+          sudo ./kubectl-directpv --kubeconfig /etc/rancher/k3s/k3s.yaml install
+          sudo ./kubectl-directpv --kubeconfig /etc/rancher/k3s/k3s.yaml discover
+          sudo ./kubectl-directpv --kubeconfig /etc/rancher/k3s/k3s.yaml init --dangerous drives.yaml
+          sudo ./kubectl-directpv --kubeconfig /etc/rancher/k3s/k3s.yaml list drives
+          sudo kubectl apply -f /vagrant_data/pvc.yaml -n directpv
         fi
       SHELL
     end

@@ -12,6 +12,8 @@ sudo curl -sfL https://get.k3s.io | sh -
 
 sudo k3s-uninstall.sh
 
+sudo k3s-agent-uninstall.sh
+
 ## Docker desktop
 
 ### install metrics-server
