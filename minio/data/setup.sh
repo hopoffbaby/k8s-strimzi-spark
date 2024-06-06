@@ -15,3 +15,28 @@ sudo helm install --namespace minio-operator --create-namespace operator ./opera
 # wait for the operator to become ready
 sudo kubectl wait deployment/minio-operator --for=condition=Available --timeout=500s -n minio-operator
 
+# Convert service to NodePort so it can be accessed from Laptops private network with vagrant VM
+
+# Ensure yq is installed
+if ! command -v yq &> /dev/null
+then
+    echo "yq could not be found, installing yq..."
+    sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
+    sudo chmod +x /usr/bin/yq
+fi
+
+# Get the service YAML
+sudo kubectl get svc console -n minio-operator -o yaml > console-service.yaml
+
+# Update the service type to NodePort
+yq eval '.spec.type = "NodePort"' -i console-service.yaml
+
+# update the service - TODO - investigate why this doesnt apply in vagrant - race condition?
+sudo kubectl apply -f console-service.yaml
+
+# show the JWT to use to access the console
+
+sudo kubectl get secret/console-sa-secret -n minio-operator -o json | jq -r '.data.token' | base64 --decode
+
+# show the port to use
+sudo kubectl get svc/console -n minio-operator

@@ -70,32 +70,19 @@ kubectl apply -f minio-tenant.yaml -n minio-operator
 
 env is getting through, but keep getting error about empty tenant credentials...
 
-===========
 
-kVqFmYGC7XQ69B8h
-7M8SIWF5mAA876Cc3kPWiHUztVqJEdtd
+# DirectPV Vagrant testing
 
-==========
+deploy VMs with K3S using vagrant
 
-# DirectPV
+$env:VAGRANT_EXPERIMENTAL='disks'; vagrant up    
 
-deploy using vagrant
+vagrant ssh vm1
 
-kill a k8s node, kubectl-directpv still shows drive as ready..
+/vagrant_data/setup.sh
 
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+on laptop:
 
+http://10.10.10.11:<nodeport>
 
-#### funky-ness required because of firewall
-
-helm repo add minio-operator https://operator.min.io --insecure-skip-tls-verify
-
-curl -k -LO https://operator.min.io/helm-releases/operator-5.0.15.tgz
-
-sudo helm install --namespace minio-operator --create-namespace operator ./operator-5.0.15.tgz --kubeconfig /etc/rancher/k3s/k3s.yaml --set operator.env[0].name=OPERATOR_STS_ENABLED --set operator.env[0].value="off"
-
-sudo kubectl wait deployment/minio-operator --for=condition=Available --timeout=500s -n minio-operator
-
-sudo kubectl --namespace minio-operator port-forward svc/console 9090:9090
-
-sudo kubectl get secret/console-sa-secret -n minio-operator -o json | jq -r '.data.token' | base64 --decode
+use the node port and jwt displayed by the script to log on
