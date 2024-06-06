@@ -18,8 +18,6 @@ Vagrant.configure("2") do |config|
   (1..1).each do |i|
     config.vm.define "vm#{i}" do |node|
       node.vm.network "private_network", ip: "10.10.10.1#{i}"
-      node.vm.network "forwarded_port", guest: 9999, host: 9999, protocol: "tcp"
-      node.vm.network "forwarded_port", guest: 9999, host: 9999, protocol: "udp"
       
       #node.vm.network "public_network", bridge: "PANGP Virtual Ethernet Adapter Secure"
       node.vm.hostname = "vm#{i}"
@@ -32,7 +30,7 @@ Vagrant.configure("2") do |config|
 
       node.vm.provider "virtualbox" do |vb|
         vb.gui = false
-        vb.memory = "3000"
+        vb.memory = "4000"
         vb.cpus = 4
       end
 
