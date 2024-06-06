@@ -15,10 +15,13 @@ Vagrant.configure("2") do |config|
     fi
   SHELL
 
-  (1..2).each do |i|
+  (1..1).each do |i|
     config.vm.define "vm#{i}" do |node|
       node.vm.network "private_network", ip: "10.10.10.1#{i}"
-      node.vm.network "public_network", bridge: "PANGP Virtual Ethernet Adapter Secure"
+      node.vm.network "forwarded_port", guest: 9999, host: 9999, protocol: "tcp"
+      node.vm.network "forwarded_port", guest: 9999, host: 9999, protocol: "udp"
+      
+      #node.vm.network "public_network", bridge: "PANGP Virtual Ethernet Adapter Secure"
       node.vm.hostname = "vm#{i}"
 
       # Export VAGRANT_EXPERIMENTAL="disks"
@@ -35,7 +38,7 @@ Vagrant.configure("2") do |config|
 
       node.vm.provision "prereq", type: "shell", inline: <<-SHELL
         apt-get update
-        apt-get install -y iputils-ping sshpass
+        apt-get install -y iputils-ping sshpass jq
         yes vagrant | passwd root
         echo "10.10.10.11 vm1 vm1" >> /etc/hosts
         echo "10.10.10.12 vm2 vm2" >> /etc/hosts
@@ -60,7 +63,7 @@ Vagrant.configure("2") do |config|
         chmod 600 /root/.ssh/id_rsa /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys
       SHELL
 
-      node.vm.provision "fix_bs_firewall", type: "shell", inline: <<-SHELL
+      node.vm.provision "bodge_bs_firewall", type: "shell", inline: <<-SHELL
         # Add 'insecure' option to ~/.curlrc for both vagrant and root users
         # bullshit firewall issues .....
         echo insecure >> /home/vagrant/.curlrc
@@ -104,21 +107,21 @@ Vagrant.configure("2") do |config|
         fi
       SHELL
 
-      node.vm.provision "install_directpv", type: "shell", inline: <<-SHELL
-        if [ "$(hostname)" == "vm1" ]; then
-          # Download DirectPV plugin.
-          release=$(curl -sfL "https://api.github.com/repos/minio/directpv/releases/latest" | awk '/tag_name/ { print substr($2, 3, length($2)-4) }')
-          curl -fLo kubectl-directpv https://github.com/minio/directpv/releases/download/v${release}/kubectl-directpv_${release}_linux_amd64
-          # Make the binary executable.
-          chmod a+x kubectl-directpv
-          # install directpv onto cluster
-          sudo ./kubectl-directpv --kubeconfig /etc/rancher/k3s/k3s.yaml install
-          sudo ./kubectl-directpv --kubeconfig /etc/rancher/k3s/k3s.yaml discover
-          sudo ./kubectl-directpv --kubeconfig /etc/rancher/k3s/k3s.yaml init --dangerous drives.yaml
-          sudo ./kubectl-directpv --kubeconfig /etc/rancher/k3s/k3s.yaml list drives
-          sudo kubectl apply -f /vagrant_data/pvc.yaml -n directpv
-        fi
-      SHELL
+      # node.vm.provision "install_directpv", type: "shell", inline: <<-SHELL
+      #   if [ "$(hostname)" == "vm1" ]; then
+      #     # Download DirectPV plugin.
+      #     release=$(curl -sfL "https://api.github.com/repos/minio/directpv/releases/latest" | awk '/tag_name/ { print substr($2, 3, length($2)-4) }')
+      #     curl -fLo kubectl-directpv https://github.com/minio/directpv/releases/download/v${release}/kubectl-directpv_${release}_linux_amd64
+      #     # Make the binary executable.
+      #     chmod a+x kubectl-directpv
+      #     # install directpv onto cluster
+      #     sudo ./kubectl-directpv --kubeconfig /etc/rancher/k3s/k3s.yaml install
+      #     sudo ./kubectl-directpv --kubeconfig /etc/rancher/k3s/k3s.yaml discover
+      #     sudo ./kubectl-directpv --kubeconfig /etc/rancher/k3s/k3s.yaml init --dangerous drives.yaml
+      #     sudo ./kubectl-directpv --kubeconfig /etc/rancher/k3s/k3s.yaml list drives
+      #     sudo kubectl apply -f /vagrant_data/pvc.yaml -n directpv
+      #   fi
+      # SHELL
     end
   end
 end

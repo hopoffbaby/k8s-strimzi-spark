@@ -74,3 +74,28 @@ env is getting through, but keep getting error about empty tenant credentials...
 
 kVqFmYGC7XQ69B8h
 7M8SIWF5mAA876Cc3kPWiHUztVqJEdtd
+
+==========
+
+# DirectPV
+
+deploy using vagrant
+
+kill a k8s node, kubectl-directpv still shows drive as ready..
+
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+
+#### funky-ness required because of firewall
+
+helm repo add minio-operator https://operator.min.io --insecure-skip-tls-verify
+
+curl -k -LO https://operator.min.io/helm-releases/operator-5.0.15.tgz
+
+sudo helm install --namespace minio-operator --create-namespace operator ./operator-5.0.15.tgz --kubeconfig /etc/rancher/k3s/k3s.yaml --set operator.env[0].name=OPERATOR_STS_ENABLED --set operator.env[0].value="off"
+
+sudo kubectl wait deployment/minio-operator --for=condition=Available --timeout=500s -n minio-operator
+
+sudo kubectl --namespace minio-operator port-forward svc/console 9090:9090
+
+sudo kubectl get secret/console-sa-secret -n minio-operator -o json | jq -r '.data.token' | base64 --decode
