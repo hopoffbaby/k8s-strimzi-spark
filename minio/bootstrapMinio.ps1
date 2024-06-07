@@ -26,6 +26,9 @@ kubectl apply -f minio-tenant-source.yaml -n minio-tenant-source
 kubectl create namespace minio-tenant-dest
 kubectl apply -f minio-tenant-dest.yaml -n minio-tenant-dest
 
+kubectl create namespace minio-tenant-mcmirror
+kubectl apply -f minio-tenant-mcmirror.yaml -n minio-tenant-mcmirror
+
 #############
 # Wait for tenants
 #############
@@ -41,33 +44,7 @@ Write-Output "Waiting for tenant to be initialized..."
 # Loop until the current time is greater than the end time
 do {
     # Retrieve the current state of the tenant
-    $currentState = kubectl get tenant source-tenant -n minio-tenant-source -o jsonpath='{.status.currentState}'
-
-    # Check if the current state is 'Initialized'
-    if ($currentState -eq 'Initialized') {
-        Write-Output "Tenant is initialized."
-        break
-    }
-
-    # Output the current state for debugging purposes
-    Write-Output "Current state: $currentState"
-
-    # Pause the loop for 5 seconds before checking again
-    Start-Sleep -Seconds 5
-} while ((Get-Date) -lt $end)
-
-# Set the timeout period in seconds
-$timeout = 500
-
-# Calculate the end time based on the current time and the timeout period
-$end = (Get-Date).AddSeconds($timeout)
-
-Write-Output "Waiting for tenant to be initialized..."
-
-# Loop until the current time is greater than the end time
-do {
-    # Retrieve the current state of the tenant
-    $currentState = kubectl get tenant dest-tenant -n minio-tenant-dest -o jsonpath='{.status.currentState}'
+    $currentState = kubectl get tenant mcmirror-tenant -n minio-tenant-mcmirror -o jsonpath='{.status.currentState}'
 
     # Check if the current state is 'Initialized'
     if ($currentState -eq 'Initialized') {
@@ -111,9 +88,10 @@ kubectl -n minio-tenant-dest run mcadmin -ti --image=minio/mc:latest --rm=true -
 # kubectl port-forward svc/console -n minio-operator 9090:9090
 # kubectl port-forward svc/source-tenant-console -n minio-tenant-source 9091:9443
 # kubectl port-forward svc/dest-tenant-console -n minio-tenant-dest 9092:9443
+# kubectl port-forward svc/mcmirror-tenant-console -n minio-tenant-mcmirror 9093:9443
 
 # Interactive shell into source cluster mc
 # kubectl -n minio-tenant-source run mcadmin -ti --image=minio/mc:latest --rm=true --restart=Never --command -- /bin/sh
 
 #RESET
-# kubectl delete namespace minio-operator minio-tenant-source minio-tenant-dest
+# kubectl delete namespace minio-operator minio-tenant-source minio-tenant-dest minio-tenant-mcmirror

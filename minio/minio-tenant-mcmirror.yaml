@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mcmirror-tenant-env-configuration
+  namespace: minio-tenant-mcmirror
+  labels:
+    v1.min.io/tenant: mcmirror-tenant
+type: Opaque
+data:
+  config.env: ZXhwb3J0IE1JTklPX05PVElGWV9LQUZLQV9FTkFCTEVfUFJJTUFSWT0ib24iDQpleHBvcnQgTUlOSU9fTk9USUZZX0tBRktBX0JST0tFUlNfUFJJTUFSWT0ibXktY2x1c3Rlci1sb2NhbC1rYWZrYS1ib290c3RyYXAua2Fma2Euc3ZjLmNsdXN0ZXIubG9jYWw6OTA5MiINCmV4cG9ydCBNSU5JT19OT1RJRllfS0FGS0FfVE9QSUNfUFJJTUFSWT0ibWluaW8iDQpleHBvcnQgTUlOSU9fUk9PVF9VU0VSPSJtaW5pbyINCmV4cG9ydCBNSU5JT19ST09UX1BBU1NXT1JEPSJwYXNzd29yZCI=
+
+---
+
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  name: mcmirror-tenant
+  namespace: minio-tenant-mcmirror
+spec:
+  configuration:
+    name: mcmirror-tenant-env-configuration
+  credsSecret:
+    name: mcmirror-tenant-secret
+  exposeServices:
+    console: true
+    minio: true
+  features: {}
+  buckets:
+    - name: "test-bucket1"
+  imagePullSecret: {}
+  mountPath: /export
+  pools:
+  - affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: v1.min.io/tenant
+              operator: In
+              values:
+              - mcmirror-tenant
+            - key: v1.min.io/pool
+              operator: In
+              values:
+              - pool-0
+          topologyKey: kubernetes.io/hostname
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      runAsGroup: 1000
+      runAsNonRoot: true
+      runAsUser: 1000
+      seccompProfile:
+        type: RuntimeDefault
+    name: pool-0
+    resources:
+      limits:
+        cpu: "2"
+        memory: 4Gi
+      requests:
+        cpu: "1"
+        memory: 2Gi
+    runtimeClassName: ""
+    securityContext:
+      fsGroup: 1000
+      fsGroupChangePolicy: OnRootMismatch
+      runAsGroup: 1000
+      runAsNonRoot: true
+      runAsUser: 1000
+    servers: 1
+    volumeClaimTemplate:
+      metadata:
+        name: data
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: "10Gi"
+        storageClassName: hostpath
+      status: {}
+    volumesPerServer: 1
+  requestAutoCert: true
+  users:
+  - name: mcmirror-tenant-user-0
