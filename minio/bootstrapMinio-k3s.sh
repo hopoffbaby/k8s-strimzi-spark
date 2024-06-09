@@ -72,7 +72,13 @@ sudo kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/
 # configure cluster replication
 #########
 
-sudo kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc alias set --insecure sourceminio https://minio.minio-tenant-source.svc.cluster.local minio password && mc alias set --insecure destminio https://minio.minio-tenant-dest.svc.cluster.local minio password && mc admin replicate add sourceminio destminio"
+sudo kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc alias set --insecure sourceminio https://minio.minio-tenant-source.svc.cluster.local minio password && mc alias set --insecure destminio https://minio.minio-tenant-dest.svc.cluster.local minio password && mc admin replicate add --replicate-ilm-expiry sourceminio destminio"
+
+# as versioning is mandatory for site replication, add a rule ILM rule to delete old versions
+
+#NOT WORKING
+
+sudo kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc ilm add --expire-delete-marker --noncurrent-expire-newer 0 --insecure myminio/test-bucket1"
 
 #########
 # copy files into source tenant
@@ -104,7 +110,6 @@ sudo kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/
 
 # WTF - for some reason with k3s I cant get /bin/sh in the mc container - says command not found. Can use the existing minio container
 # sudo kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh
-
 
 # RESET
 # sudo kubectl delete namespace minio-operator minio-tenant-source minio-tenant-dest minio-tenant-mcmirror
