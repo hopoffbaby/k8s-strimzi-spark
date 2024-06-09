@@ -88,6 +88,10 @@ sudo kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/
 sudo kubectl exec -it pod/dest-tenant-pool-0-0 -n minio-tenant-dest -- /bin/sh -c "mc alias set --insecure myminio https://minio minio password && mc ls --insecure myminio/test-bucket1 && mc admin replicate --insecure info myminio && mc admin replicate --insecure status myminio"
 
 #########
+# start up mc mirror WAN replication
+########
+
+sudo kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc alias set --insecure sourceminio https://minio.minio-tenant-source.svc.cluster.local minio password && mc alias set --insecure mirrorminio https://minio.minio-tenant-mcmirror.svc.cluster.local minio password && mc mirror --overwrite --watch --remove --preserve --retry --json --skip-errors --insecure sourceminio/test-bucket1 mirrorminio/test-bucket1"
 
 # Port forwarding
 # kubectl port-forward svc/console -n minio-operator 9090:9090
