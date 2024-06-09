@@ -21,3 +21,8 @@ sudo k3s-agent-uninstall.sh
 kubectl apply -f components.yaml
 
 
+# K9S - kubernetes TUI
+
+wget https://github.com/derailed/k9s/releases/download/v0.32.4/k9s_linux_amd64.deb
+sudo apt install ./k9s_linux_amd64.deb 
+k9s
