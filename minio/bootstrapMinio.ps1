@@ -66,23 +66,38 @@ do {
 #kubectl -n minio-operator run mcadmin -ti --image=minio/mc:latest --rm=true --restart=Never -- cp
 
 # set up event notifications on bucket
-kubectl -n minio-tenant-source run mcadmin -ti --image=minio/mc:latest --rm=true --restart=Never --command -- /bin/sh -c "mc alias set --insecure myminio https://minio minio password && mc event add --insecure myminio/test-bucket1 arn:minio:sqs::PRIMARY:kafka --event put,get,delete,replica,ilm,scanner"
+kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc alias set --insecure myminio https://minio minio password && mc event add --insecure myminio/test-bucket1 arn:minio:sqs::PRIMARY:kafka --event put,get,delete,replica,ilm,scanner"
 
 #########
 #configure cluster replication
 
-kubectl -n minio-tenant-source run mcadmin -ti --image=minio/mc:latest --rm=true --restart=Never --command -- /bin/sh -c "mc alias set --insecure sourceminio https://minio.minio-tenant-source.svc.cluster.local minio password && mc alias set --insecure destminio https://minio.minio-tenant-dest.svc.cluster.local minio password && mc admin replicate add sourceminio destminio"
+kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc alias set --insecure sourceminio https://minio.minio-tenant-source.svc.cluster.local minio password && mc alias set --insecure destminio https://minio.minio-tenant-dest.svc.cluster.local minio password && mc admin replicate add --replicate-ilm-expiry sourceminio destminio"
+
+# as versioning is mandatory for site replication, add a rule ILM rule to delete old versions
+
+#NOT WORKING - apparently mini time is 24h
+
+kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc ilm add --expire-delete-marker --noncurrent-expire-newer 0 --insecure myminio/test-bucket1"
+
+#can force a delete of non current versions using - BE VERY CAREFUL TO USE THIS COMMAND EXACTLY AS SHOWN - otherwise you can nuke all data
+#mc rm --insecure --versions --force --recursive --non-current myminio
 
 #########
 #copy files into source tenant
 #########
 # put some stuff in the bucket to trigger notifications
-kubectl -n minio-tenant-source run mcadmin -ti --image=minio/mc:latest --rm=true --restart=Never --command -- /bin/sh -c "mc alias set --insecure myminio https://minio minio password && mc cp --insecure --recursive /bin/ myminio/test-bucket1"
+kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc alias set --insecure myminio https://minio minio password && mc cp --insecure --recursive /bin/ myminio/test-bucket1"
 
 #########
 #list files and status in dest tenant
 kubectl -n minio-tenant-dest run mcadmin -ti --image=minio/mc:latest --rm=true --restart=Never --command -- /bin/sh -c "mc alias set --insecure myminio https://minio minio password && mc ls --insecure myminio/test-bucket1 && mc admin replicate --insecure info myminio && mc admin replicate --insecure status myminio"
 #########
+
+#########
+# start up mc mirror WAN replication
+########
+
+kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc alias set --insecure sourceminio https://minio.minio-tenant-source.svc.cluster.local minio password && mc alias set --insecure mirrorminio https://minio.minio-tenant-mcmirror.svc.cluster.local minio password && mc mirror --overwrite --watch --remove --preserve --retry --json --skip-errors --insecure sourceminio/test-bucket1 mirrorminio/test-bucket1"
 
 #Port forwarding
 # kubectl port-forward svc/console -n minio-operator 9090:9090
@@ -92,6 +107,8 @@ kubectl -n minio-tenant-dest run mcadmin -ti --image=minio/mc:latest --rm=true -
 
 # Interactive shell into source cluster mc
 # kubectl -n minio-tenant-source run mcadmin -ti --image=minio/mc:latest --rm=true --restart=Never --command -- /bin/sh
+#or
+#kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh
 
 #RESET
 # kubectl delete namespace minio-operator minio-tenant-source minio-tenant-dest minio-tenant-mcmirror
