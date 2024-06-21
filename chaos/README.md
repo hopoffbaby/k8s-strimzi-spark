@@ -8,11 +8,11 @@ sudo helm install --kubeconfig /etc/rancher/k3s/k3s.yaml chaos-mesh chaos-mesh/c
 
 sudo kubectl get all -n chaos-mesh
 
-kubectl apply -f components.yaml
+sudo kubectl apply -f components.yaml
 
-kubectl create token account-cluster-viewer-txknh
+sudo kubectl create token account-cluster-viewer-fvvgt
 
-kubectl describe secrets account-cluster-viewer-mhaui
+sudo kubectl describe secrets account-cluster-viewer-fvvgt
 
 # uninstall
 

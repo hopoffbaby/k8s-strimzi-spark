@@ -1,0 +1,80 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+    # Base configuration for all VMs
+    config.vm.box = "ubuntu/jammy64"
+    config.vm.provider "virtualbox" do |vb|
+      vb.memory = "512"
+    end
+  
+    # Define the first client VM
+    config.vm.define "client1" do |client1|
+      client1.vm.network "private_network", ip: "192.168.50.2", virtualbox__intnet: "net1"
+      client1.vm.provider "virtualbox" do |vb|
+        vb.name = "client1"
+      end
+      client1.vm.provision "shell", inline: <<-SHELL
+        apt-get update
+        apt-get install -y net-tools iproute2
+        # Add route to reach network 192.168.60.0/24 via gateway 192.168.50.1
+        ip route add 192.168.60.0/24 via 192.168.50.1
+      SHELL
+    end
+  
+    # Define the second client VM
+    config.vm.define "client2" do |client2|
+      client2.vm.network "private_network", ip: "192.168.60.2", virtualbox__intnet: "net2"
+      client2.vm.provider "virtualbox" do |vb|
+        vb.name = "client2"
+      end
+      client2.vm.provision "shell", inline: <<-SHELL
+        apt-get update
+        apt-get install -y net-tools iproute2
+        # Add route to reach network 192.168.50.0/24 via gateway 192.168.60.1
+        ip route add 192.168.50.0/24 via 192.168.60.1
+      SHELL
+    end
+  
+    # Define the gateway/router VM
+    config.vm.define "gateway" do |gateway|
+      gateway.vm.network "private_network", ip: "192.168.50.1", virtualbox__intnet: "net1"
+      gateway.vm.network "private_network", ip: "192.168.60.1", virtualbox__intnet: "net2"
+      gateway.vm.provider "virtualbox" do |vb|
+        vb.name = "gateway"
+      end
+      gateway.vm.provision "shell", inline: <<-SHELL
+        apt-get update
+        apt-get install -y net-tools iproute2 iptables iputils-ping tc
+  
+        # Enable IP forwarding
+        echo 1 > /proc/sys/net/ipv4/ip_forward
+  
+        # Set up NAT (Network Address Translation)
+        iptables -t nat -A POSTROUTING -o enp0s8 -j MASQUERADE
+        iptables -A FORWARD -i enp0s8 -o enp0s9 -m state --state RELATED,ESTABLISHED -j ACCEPT
+        iptables -A FORWARD -i enp0s9 -o enp0s8 -j ACCEPT
+  
+        # Traffic Control (tc) settings to introduce latency and jitter
+        # Add a root qdisc (queueing discipline) with handle 1: using HTB (Hierarchical Token Bucket)
+        tc qdisc add dev enp0s9 root handle 1: htb default 11
+        tc qdisc add dev enp0s8 root handle 1: htb default 11
+  
+        # Create a parent class 1:1 under the root qdisc with a rate of 100mbit
+        tc class add dev enp0s9 parent 1: classid 1:1 htb rate 100mbit
+        tc class add dev enp0s8 parent 1: classid 1:1 htb rate 100mbit
+  
+        # Create a child class 1:11 under the parent class 1:1 with a rate of 10mbit and a ceiling of 100mbit
+        tc class add dev enp0s9 parent 1:1 classid 1:11 htb rate 10mbit ceil 100mbit
+        tc class add dev enp0s8 parent 1:1 classid 1:11 htb rate 10mbit ceil 100mbit
+  
+        # Add a netem (Network Emulator) qdisc under the child class 1:11 to introduce latency and jitter
+        # This adds a delay of 50ms with a variation (jitter) of 10ms, following a normal distribution
+        tc qdisc add dev enp0s9 parent 1:11 handle 10: netem delay 50ms 10ms distribution normal
+        tc qdisc add dev enp0s8 parent 1:11 handle 10: netem delay 50ms 10ms distribution normal
+      SHELL
+    end
+  
+  end
+  
