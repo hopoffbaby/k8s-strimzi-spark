@@ -7,7 +7,7 @@ metadata:
     v1.min.io/tenant: source-tenant
 type: Opaque
 data:
-  config.env: ZXhwb3J0IE1JTklPX05PVElGWV9LQUZLQV9FTkFCTEVfUFJJTUFSWT0ib24iDQpleHBvcnQgTUlOSU9fTk9USUZZX0tBRktBX0JST0tFUlNfUFJJTUFSWT0ibXktY2x1c3Rlci1sb2NhbC1rYWZrYS1ib290c3RyYXAua2Fma2Euc3ZjLmNsdXN0ZXIubG9jYWw6OTA5MiINCmV4cG9ydCBNSU5JT19OT1RJRllfS0FGS0FfVE9QSUNfUFJJTUFSWT0ibWluaW8iDQpleHBvcnQgTUlOSU9fUk9PVF9VU0VSPSJtaW5pbyINCmV4cG9ydCBNSU5JT19ST09UX1BBU1NXT1JEPSJwYXNzd29yZCI=
+  config.env: ZXhwb3J0IE1JTklPX05PVElGWV9LQUZLQV9FTkFCTEVfUFJJTUFSWT0ib24iDQpleHBvcnQgTUlOSU9fTk9USUZZX0tBRktBX0JST0tFUlNfUFJJTUFSWT0ibXktY2x1c3Rlci1sb2NhbC1rYWZrYS1ib290c3RyYXAua2Fma2Euc3ZjLmNsdXN0ZXIubG9jYWw6OTA5MiINCmV4cG9ydCBNSU5JT19OT1RJRllfS0FGS0FfVE9QSUNfUFJJTUFSWT0ibWluaW8iDQpleHBvcnQgTUlOSU9fUk9PVF9VU0VSPSJtaW5pbyINCmV4cG9ydCBNSU5JT19ST09UX1BBU1NXT1JEPSJwYXNzd29yZCINCmV4cG9ydCBNSU5JT19TVE9SQUdFX0NMQVNTX1NUQU5EQVJEPSJFQzozIg==
 
 ---
 
@@ -31,19 +31,19 @@ spec:
   mountPath: /export
   pools:
   - affinity:
-      podAntiAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: v1.min.io/tenant
-              operator: In
-              values:
-              - source-tenant
-            - key: v1.min.io/pool
-              operator: In
-              values:
-              - pool-0
-          topologyKey: kubernetes.io/hostname
+      # podAntiAffinity:
+      #   requiredDuringSchedulingIgnoredDuringExecution:
+      #   - labelSelector:
+      #       matchExpressions:
+      #       - key: v1.min.io/tenant
+      #         operator: In
+      #         values:
+      #         - source-tenant
+      #       - key: v1.min.io/pool
+      #         operator: In
+      #         values:
+      #         - pool-0
+      #     topologyKey: kubernetes.io/hostname
     containerSecurityContext:
       allowPrivilegeEscalation: false
       capabilities:
@@ -66,7 +66,7 @@ spec:
       runAsGroup: 1000
       runAsNonRoot: true
       runAsUser: 1000
-    servers: 1
+    servers: 4
     volumeClaimTemplate:
       metadata:
         name: data
@@ -78,7 +78,7 @@ spec:
             storage: "10Gi"
         #storageClassName: hostpath
       status: {}
-    volumesPerServer: 1
+    volumesPerServer: 2
   requestAutoCert: true
   users:
   - name: source-tenant-user-0
