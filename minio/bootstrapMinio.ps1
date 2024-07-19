@@ -9,7 +9,7 @@ helm repo add minio-operator https://operator.min.io
 
 helm repo update
 
-helm install --namespace minio-operator --create-namespace operator minio-operator/operator
+helm install --namespace minio-operator --create-namespace operator minio-operator/operator --version 5.0.15
 
 kubectl wait deployment/minio-operator --for=condition=Available --timeout=500s -n minio-operator
 
