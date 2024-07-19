@@ -58,6 +58,7 @@ do {
     # Pause the loop for 5 seconds before checking again
     Start-Sleep -Seconds 5
 } while ((Get-Date) -lt $end)
+Start-Sleep -Seconds 30
 
 #########
 #enable events in source tenant
