@@ -102,8 +102,12 @@ kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c
 
 #Port forwarding
 # kubectl port-forward svc/console -n minio-operator 9090:9090
+
 # kubectl port-forward svc/source-tenant-console -n minio-tenant-source 9091:9443
+# kubectl port-forward svc/source-tenant-hl -n minio-tenant-source 9000:9000
+
 # kubectl port-forward svc/dest-tenant-console -n minio-tenant-dest 9092:9443
+
 # kubectl port-forward svc/mcmirror-tenant-console -n minio-tenant-mcmirror 9093:9443
 
 # Interactive shell into source cluster mc
