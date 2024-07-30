@@ -11,7 +11,7 @@ sudo helm repo add minio-operator https://operator.min.io
 
 sudo helm repo update
 
-sudo helm install --kubeconfig /etc/rancher/k3s/k3s.yaml --namespace minio-operator --create-namespace operator minio-operator/operator
+sudo helm install --kubeconfig /etc/rancher/k3s/k3s.yaml --namespace minio-operator --create-namespace operator minio-operator/operator --version 5.0.15
 
 sudo kubectl wait deployment/minio-operator --for=condition=Available --timeout=500s -n minio-operator
 
@@ -24,6 +24,8 @@ sudo kubectl get secret/console-sa-secret -n minio-operator -o json | jq -r '.da
 
 sudo kubectl create namespace minio-tenant-source
 sudo kubectl apply -f minio-tenant-source.yaml -n minio-tenant-source
+
+#exit 
 
 sudo kubectl create namespace minio-tenant-dest
 sudo kubectl apply -f minio-tenant-dest.yaml -n minio-tenant-dest
