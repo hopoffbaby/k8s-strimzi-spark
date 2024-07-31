@@ -78,7 +78,9 @@ kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c
 
 #NOT WORKING - apparently mini time is 24h
 
-kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc ilm rule add --expire-delete-marker --noncurrent-expire-newer 0 --insecure myminio/test-bucket1"
+kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc alias set --insecure myminio https://minio minio password && mc ilm rule add --expire-delete-marker --noncurrent-expire-newer 1 --noncurrent-expire-days 1 --insecure myminio/test-bucket1"
+
+# I think 0 is not a valid value
 
 #can force a delete of non current versions using - BE VERY CAREFUL TO USE THIS COMMAND EXACTLY AS SHOWN - otherwise you can nuke all data
 #mc rm --insecure --versions --force --recursive --non-current myminio

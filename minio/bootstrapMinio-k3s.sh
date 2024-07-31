@@ -80,7 +80,9 @@ sudo kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/
 
 #NOT WORKING
 
-sudo kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc ilm rule add --expire-delete-marker --noncurrent-expire-newer 0 --insecure myminio/test-bucket1"
+sudo kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc alias set --insecure myminio https://minio minio password && mc ilm rule add --expire-delete-marker --noncurrent-expire-newer 1 --noncurrent-expire-days 1 --insecure myminio/test-bucket1"
+
+# I think 0 is not a valid value
 
 #########
 # copy files into source tenant
