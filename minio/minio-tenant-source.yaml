@@ -62,7 +62,7 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: "5Ti"
+            storage: "2Gi"
         #storageClassName: hostpath
       status: {}
     volumesPerServer: 2

@@ -86,3 +86,11 @@ on laptop:
 http://10.10.10.11:<nodeport>
 
 use the node port and jwt displayed by the script to log on
+
+
+# hostpath vs longhorn
+
+install longhorn on k3s, deploy minio using the longhorn storage class to get correct sized drives (hostpath / local-path do not support limits on file system size)
+
+use kubectl on target machine (laptop) to access remote cluster and port forward.
+
