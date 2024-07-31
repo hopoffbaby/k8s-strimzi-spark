@@ -76,9 +76,11 @@ kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c
 
 # as versioning is mandatory for site replication, add a rule ILM rule to delete old versions
 
-#NOT WORKING - apparently mini time is 24h
+# expire all versions except the current and 1 previous (minimum that seems to be able to be set) - tested WORKING
+#kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc alias set --insecure myminio https://minio minio password && mc ilm rule add --expire-delete-marker --noncurrent-expire-newer 1 --insecure myminio/test-bucket1"
 
-kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc alias set --insecure myminio https://minio minio password && mc ilm rule add --expire-delete-marker --noncurrent-expire-newer 1 --noncurrent-expire-days 1 --insecure myminio/test-bucket1"
+# expire all versions except the current after 1 day (minimum that seems to be able to be set) - pending test
+kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc alias set --insecure myminio https://minio minio password && mc ilm rule add --expire-delete-marker --noncurrent-expire-days 1 --insecure myminio/test-bucket1"
 
 # I think 0 is not a valid value
 
