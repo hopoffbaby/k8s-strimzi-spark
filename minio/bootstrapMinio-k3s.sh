@@ -86,6 +86,9 @@ sudo kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/
 
 # I think 0 is not a valid value
 
+#can force a delete of non current versions using - BE VERY CAREFUL TO USE THIS COMMAND EXACTLY AS SHOWN - otherwise you can nuke all data
+#mc rm --insecure --versions --force --dangerous --recursive --non-current myminio
+
 #########
 # copy files into source tenant
 #########
@@ -105,11 +108,24 @@ sudo kubectl exec -it pod/dest-tenant-pool-0-0 -n minio-tenant-dest -- /bin/sh -
 
 sudo kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c "mc alias set --insecure sourceminio https://minio.minio-tenant-source.svc.cluster.local minio password && mc alias set --insecure mirrorminio https://minio.minio-tenant-mcmirror.svc.cluster.local minio password && mc mirror --overwrite --watch --remove --preserve --retry --json --skip-errors --insecure sourceminio/test-bucket1 mirrorminio/test-bucket1"
 
+############
 # Port forwarding
-# kubectl port-forward svc/console -n minio-operator 9090:9090
-# kubectl port-forward svc/source-tenant-console -n minio-tenant-source 9091:9443
-# kubectl port-forward svc/dest-tenant-console -n minio-tenant-dest 9092:9443
-# kubectl port-forward svc/mcmirror-tenant-console -n minio-tenant-mcmirror 9093:9443
+############
+
+# MinIO Operator
+# kubectl port-forward --kubeconfig k3skubeconfig.yaml svc/console -n minio-operator 9090:9090
+
+# Source Cluster
+# kubectl port-forward --kubeconfig k3skubeconfig.yaml svc/source-tenant-console -n minio-tenant-source 9010:9443
+# kubectl port-forward --kubeconfig k3skubeconfig.yaml svc/source-tenant-hl -n minio-tenant-source 9011:9000
+
+# Dest Cluster
+# kubectl port-forward --kubeconfig k3skubeconfig.yaml svc/dest-tenant-console -n minio-tenant-dest 9020:9443
+# kubectl port-forward --kubeconfig k3skubeconfig.yaml svc/dest-tenant-hl -n minio-tenant-dest 9021:9000
+
+# MCMirror Cluster
+# kubectl port-forward --kubeconfig k3skubeconfig.yaml svc/mcmirror-tenant-console -n minio-tenant-mcmirror 9030:9443
+# kubectl port-forward --kubeconfig k3skubeconfig.yaml svc/mcmirror-tenant-hl -n minio-tenant-mcmirror 9031:9000
 
 # Interactive shell into source cluster mc
 # kubectl -n minio-tenant-source run mcadmin -ti --image=minio/mc:latest --rm=true --restart=Never -- /bin/sh

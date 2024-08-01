@@ -85,7 +85,7 @@ kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh -c
 # I think 0 is not a valid value
 
 #can force a delete of non current versions using - BE VERY CAREFUL TO USE THIS COMMAND EXACTLY AS SHOWN - otherwise you can nuke all data
-#mc rm --insecure --versions --force --recursive --non-current myminio
+#mc rm --insecure --versions --force --dangerous --recursive --non-current myminio
 
 #########
 #copy files into source tenant
