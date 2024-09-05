@@ -6,3 +6,4 @@ minio/data/id_rsa.pub
 kubernetes/k9s_linux_amd64.deb
 k3skubeconfig.yaml
 merged-config.yaml
+rancher/data/barf1-P-COR-ITD-RCA01-CA.crt

@@ -23,14 +23,14 @@ use `sudo kubectl describe node vm1` to verify that capacity and allocable are n
 sudo apt-get update
 sudo apt-get install openssl
 
-#create CA private key
+# create CA private key
 openssl genrsa -out ca.key 4096
 
-#create the root certificate
+# create the root certificate
 openssl req -x509 -new -nodes -key ca.key -sha256 -days 3650 -out cacerts.pem \
   -subj "/C=US/ST=State/L=City/O=YourOrganization/OU=IT/CN=YourRootCA"
 
-#generate private key for rancher
+# generate private key for rancher
 openssl genrsa -out tls.key 2048
 
 
@@ -66,7 +66,7 @@ DNS.2 = rancher-cluster.local
 # generate the CSR
 openssl req -new -key tls.key -out tls.csr -config csr.conf
 
-#sign the CSR with the CA
+# sign the CSR with the CA
 openssl x509 -req -in tls.csr -CA cacerts.pem -CAkey ca.key -CAcreateserial -out tls.crt -days 365 -sha256 -extfile csr.conf -extensions req_ext
 ```
 
@@ -117,7 +117,7 @@ sudo kubectl -n cattle-system rollout status deploy/rancher
 
 ```
 
-add `10.10.10.11   rancher.vagrant.com` to your windows hosts file (as admin):
+add `10.10.10.11 rancher rancher.vagrant.com` to your windows hosts file (as admin):
 ```
 notepad C:\Windows\System32\drivers\etc\hosts
 ```
@@ -128,12 +128,12 @@ go to https://rancher.vagrant.com:30008/dashboard/?setup=admin
 
 create a new password
 
-uXqQEmgOm7qtZQ5i
 
 # Create an RKE2/K3s downstream cluster
 
 on vm2, add a hosts entry for `rancher.vagrant.com 10.10.10.11`
 
+create a new cluster. run the registration command on vm2
 
 DNS entry
 

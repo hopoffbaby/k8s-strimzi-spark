@@ -60,6 +60,8 @@ Vagrant.configure("2") do |config|
         # bullshit firewall issues .....
         echo insecure >> /home/vagrant/.curlrc
         echo insecure >> /root/.curlrc
+        cp /vagrant_data/barf1-P-COR-ITD-RCA01-CA.crt /usr/local/share/ca-certificates/barf1-P-COR-ITD-RCA01-CA.crt
+        update-ca-certificates
       SHELL
 
       node.vm.provision "install_k3s", type: "shell", inline: <<-SHELL
