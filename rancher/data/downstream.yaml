@@ -1,0 +1,114 @@
+apiVersion: provisioning.cattle.io/v1
+kind: Cluster
+metadata:
+  name: downstream
+  annotations:
+    {}
+    #  key: string
+  labels:
+    {}
+    #  key: string
+  namespace: fleet-default
+spec:
+  clusterAgentDeploymentCustomization:
+    appendTolerations:
+    overrideAffinity:
+    overrideResourceRequirements:
+  defaultPodSecurityAdmissionConfigurationTemplateName: ''
+  fleetAgentDeploymentCustomization:
+    appendTolerations:
+    overrideAffinity:
+    overrideResourceRequirements:
+  kubernetesVersion: v1.30.3+rke2r1
+  localClusterAuthEndpoint:
+    caCerts: ''
+    enabled: false
+    fqdn: ''
+  rkeConfig:
+    chartValues:
+      rke2-calico: {}
+    dataDirectories:
+      k8sDistro: ''
+      provisioning: ''
+      systemAgent: ''
+    etcd:
+      disableSnapshots: false
+      snapshotRetention: 5
+      snapshotScheduleCron: 0 */5 * * *
+    machineGlobalConfig:
+      cni: calico
+      disable-kube-proxy: false
+      etcd-expose-metrics: false
+    machinePools:
+#      - cloudCredentialSecretName: string
+#        controlPlaneRole: boolean
+#        displayName: string
+#        drainBeforeDelete: boolean
+#        drainBeforeDeleteTimeout: string
+#        dynamicSchemaSpec: string
+#        etcdRole: boolean
+#        hostnameLengthLimit: int
+#        labels:  key: string
+#        machineConfigRef:
+#          apiVersion: string
+#          fieldPath: string
+#          kind: string
+#          name: string
+#          namespace: string
+#          resourceVersion: string
+#          uid: string
+#        machineDeploymentAnnotations:  key: string
+#        machineDeploymentLabels:  key: string
+#        machineOS: string
+#        maxUnhealthy: string
+#        name: string
+#        nodeStartupTimeout: string
+#        paused: boolean
+#        quantity: int
+#        rollingUpdate:
+#          maxSurge: 
+#          maxUnavailable:
+#        taints:
+#          - effect: string
+#            key: string
+#            timeAdded: string
+#            value: string
+#        unhealthyNodeTimeout: string
+#        unhealthyRange: string
+#        workerRole: boolean
+    machineSelectorConfig:
+      - config:
+          kubelet-arg:
+            - kube-reserved=cpu=200m,memory=600Mi,ephemeral-storage=2Gi
+            - system-reserved=cpu=200m, memory=600Mi,ephemeral-storage=2Gi
+            - eviction-hard=memory.available<100Mi,nodefs.available<10%,imagefs.available<15%,nodefs.inodesFree<5%,imagefs.inodesFree<5%
+          protect-kernel-defaults: false
+    registries:
+      configs:
+        {}
+      mirrors:
+        {}
+    upgradeStrategy:
+      controlPlaneConcurrency: '1'
+      controlPlaneDrainOptions:
+        deleteEmptyDirData: true
+        disableEviction: false
+        enabled: false
+        force: false
+        gracePeriod: -1
+        ignoreDaemonSets: true
+        skipWaitForDeleteTimeoutSeconds: 0
+        timeout: 120
+      workerConcurrency: '1'
+      workerDrainOptions:
+        deleteEmptyDirData: true
+        disableEviction: false
+        enabled: false
+        force: false
+        gracePeriod: -1
+        ignoreDaemonSets: true
+        skipWaitForDeleteTimeoutSeconds: 0
+        timeout: 120
+  machineSelectorConfig:
+    - config: {}
+__clone: true
