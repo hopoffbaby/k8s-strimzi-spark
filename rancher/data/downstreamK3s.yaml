@@ -1,0 +1,100 @@
+apiVersion: provisioning.cattle.io/v1
+kind: Cluster
+metadata:
+  name: downstream
+  annotations:
+    {}
+    #  key: string
+  labels:
+    {}
+    #  key: string
+  namespace: fleet-default
+spec:
+  agentEnvVars:
+  clusterAgentDeploymentCustomization:
+    overrideAffinity:
+    overrideResourceRequirements:
+  defaultPodSecurityAdmissionConfigurationTemplateName: ''
+  fleetAgentDeploymentCustomization:
+    overrideAffinity:
+    overrideResourceRequirements:
+  kubernetesVersion: v1.30.4+k3s1
+  localClusterAuthEndpoint:
+    caCerts: ''
+    enabled: false
+    fqdn: ''
+  rkeConfig:
+    chartValues:
+      {}
+    dataDirectories:
+      k8sDistro: ''
+      provisioning: ''
+      systemAgent: ''
+    etcd:
+      disableSnapshots: false
+      snapshotRetention: 5
+      snapshotScheduleCron: 0 */5 * * *
+#      s3:
+#        bucket: string
+#        cloudCredentialName: string
+#        endpoint: string
+#        endpointCA: string
+#        folder: string
+#        region: string
+#        skipSSLVerify: boolean
+    machineGlobalConfig:
+      disable-cloud-controller: false
+      disable-kube-proxy: false
+      disable-scheduler: false
+      etcd-expose-metrics: false
+      disable-apiserver: false
+      disable-controller-manager: false
+      disable-etcd: false
+      disable-network-policy: false
+      secrets-encryption: false
+        
+    machineSelectorConfig:
+      - config:
+          kubelet-arg:
+            - kube-reserved=cpu=200m,memory=600Mi,ephemeral-storage=2Gi
+            - system-reserved=cpu=200m, memory=600Mi,ephemeral-storage=2Gi
+            - eviction-hard=memory.available<100Mi,nodefs.available<10%,imagefs.available<15%,nodefs.inodesFree<5%,imagefs.inodesFree<5%
+          protect-kernel-defaults: false
+          selinux: false
+          docker: false
+    registries:
+      configs:
+        {}
+        #  authConfigSecretName: string
+#        caBundle: string
+#        insecureSkipVerify: boolean
+#        tlsSecretName: string
+      mirrors:
+        {}
+        #  endpoint:
+#          - string
+#        rewrite:  key: string
+    upgradeStrategy:
+      controlPlaneConcurrency: '1'
+      controlPlaneDrainOptions:
+        deleteEmptyDirData: true
+        disableEviction: false
+        enabled: false
+        force: false
+        gracePeriod: -1
+        ignoreDaemonSets: true
+        skipWaitForDeleteTimeoutSeconds: 0
+        timeout: 120
+      workerConcurrency: '1'
+      workerDrainOptions:
+        deleteEmptyDirData: true
+        disableEviction: false
+        enabled: false
+        force: false
+        gracePeriod: -1
+        ignoreDaemonSets: true
+        skipWaitForDeleteTimeoutSeconds: 0
+        timeout: 120
+  machineSelectorConfig:
+    - config: {}
+__clone: true
