@@ -47,7 +47,7 @@ go to https://rancher.vagrant.com/dashboard/?setup=admin
 
 create a new password
 
-SIaEGAbbcR69YVoC
+LCzlHKpBj20iMy3n
 
 
 # Create an K3s downstream cluster

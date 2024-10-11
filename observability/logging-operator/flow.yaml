@@ -1,0 +1,13 @@
+apiVersion: logging.banzaicloud.io/v1beta1
+kind: Flow
+metadata:
+  name: log-generator
+spec:
+  filters:
+    - tag_normaliser: {}
+  match:
+    - select:
+        labels:
+          app.kubernetes.io/managed-by: Helm
+  localOutputRefs:
+    - lokioutput

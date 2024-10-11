@@ -8,3 +8,4 @@ k3skubeconfig.yaml
 merged-config.yaml
 rancher/data/barf1-P-COR-ITD-RCA01-CA.crt
 rancher/tmp/cacerts.pem
+observability/kubeconfig.yaml
