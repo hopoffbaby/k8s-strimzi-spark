@@ -9,3 +9,5 @@ merged-config.yaml
 rancher/data/barf1-P-COR-ITD-RCA01-CA.crt
 rancher/tmp/cacerts.pem
 observability/kubeconfig.yaml
+observability/kube-prometheus-stack/prombackup/*
+observability/flashArray/secret.yaml
