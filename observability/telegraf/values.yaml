@@ -1,0 +1,81 @@
+## Default values.yaml for Telegraf
+## This is a YAML-formatted file.
+## ref: https://hub.docker.com/r/library/telegraf/tags/
+
+replicaCount: 1
+image:
+  repo: "docker.io/library/telegraf"
+  tag: "1.32-alpine"
+  pullPolicy: IfNotPresent
+podAnnotations: {}
+podLabels: {}
+imagePullSecrets: []
+## Configure args passed to Telegraf containers
+args: []
+# The name of a secret in the same kubernetes namespace which contains values to
+# be added to the environment (must be manually created)
+# This can be useful for auth tokens, etc.
+
+# envFromSecret: "telegraf-tokens"
+env:
+  - name: HOSTNAME
+    value: "telegraf-polling-service"
+# An older "volumeMounts" key was previously added which will likely
+# NOT WORK as you expect. Please use this newer configuration.
+
+
+service:
+  enabled: true
+  type: ClusterIP
+  annotations: {}
+
+
+config:
+  agent:
+    interval: "30s"
+    round_interval: true
+    metric_batch_size: 1000
+    metric_buffer_limit: 10000
+    collection_jitter: "0s"
+    flush_interval: "10s"
+    flush_jitter: "0s"
+    precision: ""
+    debug: false
+    quiet: false
+    logfile: ""
+    hostname: "$HOSTNAME"
+    omit_hostname: false
+  outputs:
+    - prometheus_client:
+        listen: ":9273"
+  inputs:
+    - vsphere:
+        vcenters:
+          - "https://r-trk-itd-vcs01.barf1.com/sdk"
+        username: "xxxxxxxxxxxxxxxxxxxxxxx"
+        password: "xxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        insecure_skip_verify: true
+        vm_metric_include:
+          - "virtualDisk.numberReadAveraged.average"
+          - "virtualDisk.numberWriteAveraged.average"
+          - "virtualDisk.read.average"
+          - "virtualDisk.readOIO.latest"
+          - "virtualDisk.throughput.usage.average"
+          - "virtualDisk.totalReadLatency.average"
+          - "virtualDisk.totalWriteLatency.average"
+          - "virtualDisk.write.average"
+          - "virtualDisk.writeOIO.latest"
+        host_metric_include:
+          - "sys.uptime.latest"
+metrics:
+  health:
+    enabled: false
+    service_address: "http://:8888"
+    threshold: 5000.0
+  internal:
+    enabled: true
+    collect_memstats: false
+# Lifecycle hooks
+# hooks:
+#   postStart: ["/bin/sh", "-c", "echo Telegraf started"]
+#   preStop: ["/bin/sh", "-c", "sleep 60"]

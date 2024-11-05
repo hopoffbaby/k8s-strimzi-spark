@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: telegraf-monitor
+  namespace: telegraf
+  labels:
+    release: neils-stack
+spec:
+  jobLabel: telegraf-job
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: telegraf
+  namespaceSelector:
+    matchNames:
+    - telegraf
+  endpoints:
+  - port: prometheus-client
+    interval: 30s
+    scrapeTimeout: 20s
+    path: /metrics

@@ -41,3 +41,16 @@ kubectl --kubeconfig kubeconfig.yaml apply -n wordpress -f logging-operator/outp
 kubectl --kubeconfig kubeconfig.yaml apply -n wordpress -f logging-operator/flow.yaml
 
 # connect grafana to Loki with http://loki.loki.svc.cluster.local:3100
+
+# install telegraf to scrape vSphere metrics
+helm repo add influxdata https://helm.influxdata.com/
+
+helm upgrade --kubeconfig kubeconfig.yaml --install my-release -f telegraf/values.yaml --namespace telegraf --create-namespace influxdata/telegraf 
+
+kubectl --kubeconfig kubeconfig.yaml apply -n telegraf -f .\telegraf\servicemonitor.yaml
+
+#BACKUP PROMETHEUS DATA
+#kubectl --kubeconfig ../../kubeconfig.yaml cp monitoring/prometheus-neils-stack-kube-prometheu-prometheus-0:/prometheus .
+
+#RESTORE PROMETHEUS DATA
+# kubectl --kubeconfig kubeconfig.yaml cp .\kube-prometheus-stack\prombackup\. monitoring/prometheus-neils-stack-kube-prometheu-prometheus-0:/prometheus
