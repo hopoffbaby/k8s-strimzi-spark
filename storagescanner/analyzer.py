@@ -397,7 +397,7 @@ def analyze_es_cold_data(cold_data, max_depth):
 # 11. Additional Insights
 def additional_insights(df, hot_data, cold_data):
     """
-    Provide additional insights such as file size statistics, top largest files, etc.
+    Provide additional insights such as total size, file size statistics, top largest files, and last access distribution.
 
     Args:
         df (pd.DataFrame): The feature-engineered DataFrame.
@@ -407,6 +407,10 @@ def additional_insights(df, hot_data, cold_data):
     Returns:
         None
     """
+    # Report total size of all files
+    total_size = df['size'].sum()
+    logging.info(f"\nTotal Size of All Files: {sizeof_fmt(total_size)}")
+
     # a. File Size Statistics
     size_stats = df['size'].describe()
     median_size = df['size'].median()
@@ -454,9 +458,9 @@ def additional_insights(df, hot_data, cold_data):
     for period, count in modifications_over_time.items():
         logging.info(f"{period}: {count}")
 
-    # f. File Extension Size Contribution
+    # f. File Extension Size Contribution (Overall)
     size_by_extension = df.groupby('extension', observed=True)['size'].sum().sort_values(ascending=False)
-    logging.info("\nTotal Size by File Extension (Sorted by Size):")
+    logging.info("\nTotal Size by File Extension (Overall):")
     for ext, size in size_by_extension.items():
         logging.info(f"{ext}: {sizeof_fmt(size)}")
 
@@ -469,6 +473,15 @@ def additional_insights(df, hot_data, cold_data):
             explanation = interpret_correlation(row, col, corr_value)
             logging.info(f"{row} vs {col}: {corr_value:.4f} {explanation}")
 
+    # h. Distribution of Last Access Time Bucketed into Months (up to 24 months)
+    logging.info("\nDistribution of Last Access Time Bucketed into Months (Up to 24 Months):")
+    for month in range(1, 25):
+        days = month * 30  # Approximate days in a month
+        accessed_in_period = df[df['days_since_access'] <= days]
+        total_size_in_period = accessed_in_period['size'].sum()
+        logging.info(f"Accessed in last {month} month(s): {sizeof_fmt(total_size_in_period)}")
+
+# Function to interpret correlation coefficients
 def interpret_correlation(var1, var2, corr_value):
     """
     Provide layman explanations for correlation coefficients.
