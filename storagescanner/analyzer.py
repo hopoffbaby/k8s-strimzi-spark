@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
-from datetime import datetime
-from pathlib import Path
+import re
+import os
 import logging
 import argparse
 import time
@@ -54,7 +54,7 @@ def parse_arguments():
 # 4. Load Data
 def load_data(file_path):
     """
-    Load the CSV data with appropriate data types and parse dates.
+    Load the data using optimized methods.
 
     Args:
         file_path (str): Path to the CSV file.
@@ -62,44 +62,67 @@ def load_data(file_path):
     Returns:
         pd.DataFrame: Loaded DataFrame.
     """
+    parquet_file = file_path.replace('.csv', '.parquet')
+    if os.path.exists(parquet_file):
+        try:
+            df = pd.read_parquet(parquet_file)
+            logging.info("Parquet file loaded successfully.")
+            return df
+        except Exception as e:
+            logging.error(f"Error loading Parquet file: {e}")
+            logging.info("Attempting to load CSV file instead.")
+    
+    # If Parquet loading fails or file doesn't exist, load CSV
     dtype = {
         'path': 'string',
         'access_time': 'string',
         'modify_time': 'string',
         'change_time': 'string',
-        'size': 'int64'
+        'size': 'int64',
+        'file_type': 'string'
     }
-    parse_dates = ['access_time', 'modify_time', 'change_time']
-
     try:
-        df = pd.read_csv(file_path, dtype=dtype, parse_dates=parse_dates)
-        logging.info("CSV file loaded successfully.")
-        return df
-    except FileNotFoundError:
-        logging.error(f"'{file_path}' file not found. Please check the file path.")
+        df = pd.read_csv(
+            file_path,
+            dtype=dtype,
+            engine='pyarrow',
+            usecols=['path', 'access_time', 'modify_time', 'size']
+        )
+        logging.info("CSV file loaded successfully using PyArrow.")
+        # Save as Parquet for future use
+        df.to_parquet(parquet_file)
+        logging.info("Data saved as Parquet for future use.")
+    except Exception as e:
+        logging.error(f"Error loading CSV file: {e}")
         exit(1)
+    return df
 
 # 5. Data Cleaning and Feature Engineering
 def clean_and_engineer(df, current_date_str, max_depth):
     """
-    Clean the DataFrame and perform feature engineering.
+    Clean the DataFrame and perform feature engineering with optimizations.
 
     Args:
         df (pd.DataFrame): The original DataFrame.
         current_date_str (str): Current date as a string.
-        max_depth (int or None): Maximum directory depth to analyze. If None, determine dynamically.
+        max_depth (int or None): Maximum directory depth to analyze.
 
     Returns:
         pd.DataFrame: Cleaned and feature-engineered DataFrame.
         int: Actual maximum directory depth in the data.
     """
     start_time = time.time()
+    section_start_time = time.time()
+
+    # Parse dates
+    date_columns = ['access_time', 'modify_time']
+    for col in date_columns:
+        df[col] = pd.to_datetime(df[col], errors='coerce')
 
     # Drop rows with missing 'path' or 'access_time'
-    initial_rows = df.shape[0]
+    initial_shape = df.shape
     df = df.dropna(subset=['path', 'access_time'])
-    dropped_rows = initial_rows - df.shape[0]
-    logging.info(f"Dropped {dropped_rows} rows due to missing 'path' or 'access_time'.")
+    logging.info(f"Dropped {initial_shape[0] - df.shape[0]} records with missing 'path' or 'access_time'.")
 
     # Normalize path separators to '/'
     df['path'] = df['path'].str.replace('\\', '/', regex=False)
@@ -108,56 +131,100 @@ def clean_and_engineer(df, current_date_str, max_depth):
     current_date = pd.to_datetime(current_date_str)
     df['days_since_access'] = (current_date - df['access_time']).dt.days
 
-    # Extract directory from path using pathlib
-    df['directory'] = df['path'].apply(lambda x: str(Path(x).parent))
+    # Identify and log files with future 'access_time'
+    future_dates = df[df['access_time'] > current_date]
+    future_dates_count = future_dates.shape[0]
+    if future_dates_count > 0:
+        logging.warning(f"Found {future_dates_count} records with 'access_time' in the future.")
+        logging.warning("Listing files with future 'access_time':")
+        for _, row in future_dates.iterrows():
+            logging.warning(f"File: {row['path']}, Access Time: {row['access_time']}")
 
-    # Extract file extension and lowercase it
-    df['extension'] = df['path'].str.extract(r'\.([^.]+)$')[0].str.lower()
+    # Exclude records with future 'access_time'
+    df = df[df['access_time'] <= current_date]
+    logging.info(f"Excluded {future_dates_count} records with future 'access_time'.")
+
+    # Extract directory from path
+    df['directory'] = df['path'].str.rsplit('/', n=1).str[0]
+
+    # Pre-compile regex for extension extraction
+    ext_pattern = re.compile(r'\.([^.\/]+)$')
+    df['extension'] = df['path'].str.extract(ext_pattern, expand=False).str.lower()
 
     # Calculate gap between creation (modify_time) and last access
     df['creation_access_gap'] = (df['access_time'] - df['modify_time']).dt.days
 
-    # Extract the path object and compute depth
-    df['path_obj'] = df['path'].apply(lambda x: Path(x))
-    df['depth'] = df['path_obj'].apply(lambda p: len(p.parts))
+    # Compute depth of each path
+    df['depth'] = df['path'].str.count('/') + 1
 
     # Determine the actual maximum directory depth
     actual_max_depth = df['depth'].max() if max_depth is None else min(df['depth'].max(), max_depth)
+    logging.info(f"Determined maximum directory depth: {actual_max_depth}")
 
-    # Function to extract directory at a specific depth
-    def get_directory_depth(path_obj, depth):
-        try:
-            return str(Path(*path_obj.parts[:depth]))
-        except IndexError:
-            return str(path_obj)
+    # Split the path into parts
+    df['path_parts'] = df['path'].str.split('/')
 
-    # Create directory depth columns
-    for depth in range(1, actual_max_depth + 1):
-        col_name = f'dir_depth_{depth}'
-        df[col_name] = df['path_obj'].apply(lambda p: get_directory_depth(p, depth))
+    # Optimize directory depth columns
+    max_depth = min(actual_max_depth, df['path_parts'].str.len().max())
+    path_parts_list = df['path_parts'].tolist()
+
+    # Pre-allocate lists for new columns
+    dir_depth_cols = {f'dir_depth_{depth}': [] for depth in range(1, max_depth + 1)}
+    leaf_dirs = []
+    last_two_leaf_dirs = []
+
+    # For consistent folder structure analysis
+    df['mountpoint'] = df['path_parts'].str[1]
+    df['season'] = df['path_parts'].str[2]
+    df['event'] = df['path_parts'].str[3]
+
+    for parts in path_parts_list:
+        # Create directory depth columns
+        for depth in range(1, max_depth + 1):
+            col_name = f'dir_depth_{depth}'
+            if len(parts) >= depth:
+                dir_depth_cols[col_name].append('/'.join(parts[:depth]))
+            else:
+                dir_depth_cols[col_name].append('/'.join(parts))
+
+        # Extract leaf directory name
+        leaf_dirs.append(parts[-2] if len(parts) >= 2 else '')
+
+        # Extract last two leaf directories
+        if len(parts) >= 3:
+            last_two_leaf_dirs.append('/'.join(parts[-3:-1]))
+        elif len(parts) >= 2:
+            last_two_leaf_dirs.append(parts[-2])
+        else:
+            last_two_leaf_dirs.append('')
+
+    # Assign new columns to DataFrame
+    for col_name, col_data in dir_depth_cols.items():
+        df[col_name] = col_data
         logging.info(f"Created column: {col_name}")
 
-    # Extract leaf directory name (the last directory in the path)
-    df['leaf_dir'] = df['path_obj'].apply(lambda p: p.parent.name)
+    df['leaf_dir'] = leaf_dirs
     logging.info("Created column: leaf_dir")
 
-    # **Corrected**: Extract last two leaf directories by referencing the parent directory
-    df['last_two_leaf_dirs'] = df['path_obj'].apply(
-        lambda p: '/'.join(p.parent.parts[-2:]) if len(p.parent.parts) >= 2 else p.parent.parts[-1]
-    )
+    df['last_two_leaf_dirs'] = last_two_leaf_dirs
     logging.info("Created column: last_two_leaf_dirs")
 
-    # Convert 'extension', 'directory', 'leaf_dir', and 'last_two_leaf_dirs' to category to save memory
-    df['extension'] = df['extension'].astype('category')
-    df['directory'] = df['directory'].astype('category')
-    df['leaf_dir'] = df['leaf_dir'].astype('category')
-    df['last_two_leaf_dirs'] = df['last_two_leaf_dirs'].astype('category')
+    # Identify low cardinality columns
+    categorical_cols = ['extension', 'leaf_dir', 'last_two_leaf_dirs', 'mountpoint', 'season', 'event']
+    low_cardinality_cols = [col for col in categorical_cols if df[col].nunique() < 1000]
+    logging.info(f"Identified {len(low_cardinality_cols)} low cardinality columns for category conversion.")
 
-    # Drop the 'path_obj' column as it's no longer needed
-    df = df.drop(columns=['path_obj'])
+    # Convert only low cardinality columns to 'category'
+    for col in low_cardinality_cols:
+        df[col] = df[col].astype('category')
+        logging.info(f"Converted column to category: {col}")
 
-    end_time = time.time()
-    logging.info(f"Data cleaning and feature engineering completed in {end_time - start_time:.2f} seconds.")
+    # Drop 'path_parts' column
+    df = df.drop(columns=['path_parts'])
+
+    section_end_time = time.time()
+    df.processing_time = section_end_time - section_start_time
+    logging.info(f"Data cleaning and feature engineering completed in {df.processing_time:.2f} seconds.")
 
     return df, actual_max_depth
 
@@ -172,28 +239,56 @@ def analyze_data(df, args, actual_max_depth):
         actual_max_depth (int): Actual maximum directory depth in the data.
 
     Returns:
-        None
+        dict: Dictionary containing processing times for each section.
     """
+    processing_times = {}
+    start_time = time.time()
+
     # Extract thresholds from arguments
     hot_threshold_days = args.hot_threshold
     cold_threshold_days = args.cold_threshold
 
     # Analyze Cold Data
+    section_start_time = time.time()
     cold_data = df[df['days_since_access'] > cold_threshold_days]
     analyze_cold_data(cold_data, actual_max_depth)
+    processing_times['analyze_cold_data'] = time.time() - section_start_time
 
     # Analyze Hot Data
+    section_start_time = time.time()
     hot_data = df[df['days_since_access'] <= hot_threshold_days]
     analyze_hot_data(hot_data, actual_max_depth)
+    processing_times['analyze_hot_data'] = time.time() - section_start_time
 
     # Analyze Especially Hot Data
+    section_start_time = time.time()
     es_hot_data = analyze_es_hot_data(hot_data, actual_max_depth)
+    processing_times['analyze_es_hot_data'] = time.time() - section_start_time
 
     # Analyze Especially Cold Data
+    section_start_time = time.time()
     es_cold_data = analyze_es_cold_data(cold_data, actual_max_depth)
+    processing_times['analyze_es_cold_data'] = time.time() - section_start_time
 
     # Additional Insights
-    additional_insights(df, hot_data, cold_data)
+    section_start_time = time.time()
+    additional_insights(df, hot_data, cold_data, args)
+    processing_times['additional_insights'] = time.time() - section_start_time
+
+    # Analyze File Type Coldness
+    section_start_time = time.time()
+    analyze_file_type_coldness(df, args)
+    processing_times['analyze_file_type_coldness'] = time.time() - section_start_time
+
+    # Analyze Folder Coldness
+    section_start_time = time.time()
+    analyze_folder_coldness(df, args)
+    processing_times['analyze_folder_coldness'] = time.time() - section_start_time
+
+    total_time = time.time() - start_time
+    processing_times['total_analysis_time'] = total_time
+
+    return processing_times
 
 # 7. Analyze Cold Data
 def analyze_cold_data(cold_data, max_depth):
@@ -394,8 +489,130 @@ def analyze_es_cold_data(cold_data, max_depth):
 
     return especially_cold_data
 
-# 11. Additional Insights
-def additional_insights(df, hot_data, cold_data):
+# 11. Analyze File Type Coldness (Feature 1)
+def analyze_file_type_coldness(df, args):
+    """
+    For each of the top 25 file types (by total size), analyze how quickly the data becomes cold.
+
+    Args:
+        df (pd.DataFrame): The feature-engineered DataFrame.
+        args (argparse.Namespace): Parsed command-line arguments.
+
+    Returns:
+        None
+    """
+    logging.info("\nAnalyzing File Type Coldness:")
+    top_extensions = df.groupby('extension')['size'].sum().sort_values(ascending=False).head(25).index.tolist()
+
+    for ext in top_extensions:
+        ext_data = df[df['extension'] == ext]
+        total_size = ext_data['size'].sum()
+        # Calculate percentage of data that is cold
+        cold_data = ext_data[ext_data['days_since_access'] > args.cold_threshold]
+        cold_size = cold_data['size'].sum()
+        cold_percentage = (cold_size / total_size) * 100 if total_size > 0 else 0
+        logging.info(f"Extension: {ext}")
+        logging.info(f"  Total Size: {sizeof_fmt(total_size)}")
+        logging.info(f"  Cold Data Size: {sizeof_fmt(cold_size)} ({cold_percentage:.2f}% of total)")
+        # Analyze how quickly data becomes cold
+        # Create a histogram of 'days_since_access'
+        bins = [0, 30, 90, 180, 365, 730, np.inf]
+        labels = ['<1m', '1-3m', '3-6m', '6-12m', '1-2y', '>2y']
+        ext_data['access_age_group'] = pd.cut(ext_data['days_since_access'], bins=bins, labels=labels)
+        age_distribution = ext_data.groupby('access_age_group')['size'].sum()
+        logging.info(f"  Data Size by Access Age Group:")
+        for age_group, size in age_distribution.items():
+            logging.info(f"    {age_group}: {sizeof_fmt(size)}")
+
+# 12. Analyze Folder Coldness (Features 4 and 5)
+def analyze_folder_coldness(df, args):
+    """
+    Analyze how quickly data in various folders becomes cold, including consistent folder structures.
+
+    Args:
+        df (pd.DataFrame): The feature-engineered DataFrame.
+        args (argparse.Namespace): Parsed command-line arguments.
+
+    Returns:
+        None
+    """
+    logging.info("\nAnalyzing Folder Coldness:")
+
+    # For top 20 folders by total size
+    top_folders = df.groupby('dir_depth_3')['size'].sum().sort_values(ascending=False).head(20).index.tolist()
+    for folder in top_folders:
+        folder_data = df[df['dir_depth_3'] == folder]
+        total_size = folder_data['size'].sum()
+        cold_data = folder_data[folder_data['days_since_access'] > args.cold_threshold]
+        cold_size = cold_data['size'].sum()
+        cold_percentage = (cold_size / total_size) * 100 if total_size > 0 else 0
+        logging.info(f"Folder: {folder}")
+        logging.info(f"  Total Size: {sizeof_fmt(total_size)}")
+        logging.info(f"  Cold Data Size: {sizeof_fmt(cold_size)} ({cold_percentage:.2f}% of total)")
+        # Analyze how quickly data becomes cold
+        bins = [0, 30, 90, 180, 365, 730, np.inf]
+        labels = ['<1m', '1-3m', '3-6m', '6-12m', '1-2y', '>2y']
+        folder_data['access_age_group'] = pd.cut(folder_data['days_since_access'], bins=bins, labels=labels)
+        age_distribution = folder_data.groupby('access_age_group')['size'].sum()
+        logging.info(f"  Data Size by Access Age Group:")
+        for age_group, size in age_distribution.items():
+            logging.info(f"    {age_group}: {sizeof_fmt(size)}")
+
+    # Analyze consistent folder structures
+    logging.info("\nAnalyzing Consistent Folder Structures:")
+    consistent_folders = df.groupby(['mountpoint', 'season', 'event'])['size'].sum().sort_values(ascending=False).head(20).reset_index()
+    for _, row in consistent_folders.iterrows():
+        folder_data = df[
+            (df['mountpoint'] == row['mountpoint']) &
+            (df['season'] == row['season']) &
+            (df['event'] == row['event'])
+        ]
+        total_size = folder_data['size'].sum()
+        cold_data = folder_data[folder_data['days_since_access'] > args.cold_threshold]
+        cold_size = cold_data['size'].sum()
+        cold_percentage = (cold_size / total_size) * 100 if total_size > 0 else 0
+        folder_path = f"/{row['mountpoint']}/{row['season']}/{row['event']}"
+        logging.info(f"Folder: {folder_path}")
+        logging.info(f"  Total Size: {sizeof_fmt(total_size)}")
+        logging.info(f"  Cold Data Size: {sizeof_fmt(cold_size)} ({cold_percentage:.2f}% of total)")
+        # Analyze how quickly data becomes cold
+        bins = [0, 30, 90, 180, 365, 730, np.inf]
+        labels = ['<1m', '1-3m', '3-6m', '6-12m', '1-2y', '>2y']
+        folder_data['access_age_group'] = pd.cut(folder_data['days_since_access'], bins=bins, labels=labels)
+        age_distribution = folder_data.groupby('access_age_group')['size'].sum()
+        logging.info(f"  Data Size by Access Age Group:")
+        for age_group, size in age_distribution.items():
+            logging.info(f"    {age_group}: {sizeof_fmt(size)}")
+
+# Function to interpret correlation coefficients
+def interpret_correlation(var1, var2, corr_value):
+    """
+    Provide layman explanations for correlation coefficients.
+
+    Args:
+        var1 (str): First variable name.
+        var2 (str): Second variable name.
+        corr_value (float): Correlation coefficient.
+
+    Returns:
+        str: Explanation of the correlation.
+    """
+    if var1 == var2:
+        return "(Perfect correlation with itself)"
+
+    if corr_value > 0.5:
+        return "(Strong positive correlation: as one increases, so does the other)"
+    elif 0 < corr_value <= 0.5:
+        return "(Moderate positive correlation: as one increases, the other tends to increase)"
+    elif -0.5 <= corr_value < 0:
+        return "(Moderate negative correlation: as one increases, the other tends to decrease)"
+    elif corr_value < -0.5:
+        return "(Strong negative correlation: as one increases, the other decreases significantly)"
+    else:
+        return "(Weak or no correlation)"
+
+# 13. Additional Insights (Updated for Features 2 and 3)
+def additional_insights(df, hot_data, cold_data, args):
     """
     Provide additional insights such as total size, file size statistics, top largest files, and last access distribution.
 
@@ -403,6 +620,7 @@ def additional_insights(df, hot_data, cold_data):
         df (pd.DataFrame): The feature-engineered DataFrame.
         hot_data (pd.DataFrame): The hot data DataFrame.
         cold_data (pd.DataFrame): The cold data DataFrame.
+        args (argparse.Namespace): Parsed command-line arguments.
 
     Returns:
         None
@@ -473,54 +691,63 @@ def additional_insights(df, hot_data, cold_data):
             explanation = interpret_correlation(row, col, corr_value)
             logging.info(f"{row} vs {col}: {corr_value:.4f} {explanation}")
 
-    # h. Distribution of Last Access Time Bucketed into Months (up to 24 months)
-    logging.info("\nDistribution of Last Access Time Bucketed into Months (Up to 24 Months):")
-    for month in range(1, 25):
-        days = month * 30  # Approximate days in a month
-        accessed_in_period = df[df['days_since_access'] <= days]
-        total_size_in_period = accessed_in_period['size'].sum()
-        logging.info(f"Accessed in last {month} month(s): {sizeof_fmt(total_size_in_period)}")
+    # h. Data Accessed Over Time (Feature 2)
+    logging.info("\nData Accessed Over Time:")
+    current_date = pd.to_datetime(args.current_date)
+    df['months_since_access'] = (current_date.year - df['access_time'].dt.year) * 12 + (current_date.month - df['access_time'].dt.month)
 
-# Function to interpret correlation coefficients
-def interpret_correlation(var1, var2, corr_value):
-    """
-    Provide layman explanations for correlation coefficients.
+    for months_ago in range(1, 25):
+        data_accessed = df[df['months_since_access'] <= months_ago]
+        total_size = data_accessed['size'].sum()
+        logging.info(f"Data accessed in last {months_ago} month(s): {sizeof_fmt(total_size)}")
 
-    Args:
-        var1 (str): First variable name.
-        var2 (str): Second variable name.
-        corr_value (float): Correlation coefficient.
+    # i. Indication of How Quickly Total Data Becomes Cold (Feature 3)
+    logging.info("\nIndication of How Quickly Total Data Becomes Cold:")
+    total_size = df['size'].sum()
+    for days in [30, 90, 180, 365, 730]:
+        cold_data = df[df['days_since_access'] > days]
+        cold_size = cold_data['size'].sum()
+        cold_percentage = (cold_size / total_size) * 100 if total_size > 0 else 0
+        logging.info(f"Data not accessed in last {days} day(s): {sizeof_fmt(cold_size)} ({cold_percentage:.2f}% of total)")
 
-    Returns:
-        str: Explanation of the correlation.
-    """
-    if var1 == var2:
-        return "(Perfect correlation with itself)"
-
-    if corr_value > 0.5:
-        return "(Strong positive correlation: as one increases, so does the other)"
-    elif 0 < corr_value <= 0.5:
-        return "(Moderate positive correlation: as one increases, the other tends to increase)"
-    elif -0.5 <= corr_value < 0:
-        return "(Moderate negative correlation: as one increases, the other tends to decrease)"
-    elif corr_value < -0.5:
-        return "(Strong negative correlation: as one increases, the other decreases significantly)"
-    else:
-        return "(Weak or no correlation)"
-
-# 12. Main Function
+# 14. Main Function
 def main():
+    total_start_time = time.time()
+
     # Parse arguments
     args = parse_arguments()
 
+    # Log input parameters
+    logging.info("Input Parameters:")
+    logging.info(f"CSV File Path: {args.file}")
+    logging.info(f"Current Date: {args.current_date}")
+    logging.info(f"Hot Threshold (days): {args.hot_threshold}")
+    logging.info(f"Cold Threshold (days): {args.cold_threshold}")
+    logging.info(f"Maximum Directory Depth: {args.max_depth}")
+
     # Load Data
+    load_start_time = time.time()
     df = load_data(args.file)
+    load_end_time = time.time()
+    load_time = load_end_time - load_start_time
 
     # Clean and Engineer Features
     df, actual_max_depth = clean_and_engineer(df, args.current_date, args.max_depth)
+    clean_engineer_time = df.processing_time
 
     # Analyze Data
-    analyze_data(df, args, actual_max_depth)
+    processing_times = analyze_data(df, args, actual_max_depth)
+
+    total_end_time = time.time()
+    total_processing_time = total_end_time - total_start_time
+
+    # Log processing times
+    logging.info("\nProcessing Time Summary:")
+    logging.info(f"Data Loading Time: {load_time:.2f} seconds")
+    logging.info(f"Data Cleaning and Feature Engineering Time: {clean_engineer_time:.2f} seconds")
+    for section, time_taken in processing_times.items():
+        logging.info(f"{section.replace('_', ' ').title()}: {time_taken:.2f} seconds")
+    logging.info(f"Total Processing Time: {total_processing_time:.2f} seconds")
 
 if __name__ == "__main__":
     main()
