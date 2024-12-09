@@ -11,3 +11,4 @@ rancher/tmp/cacerts.pem
 observability/kubeconfig.yaml
 observability/kube-prometheus-stack/prombackup/*
 observability/flashArray/secret.yaml
+LLMs/venv/*
