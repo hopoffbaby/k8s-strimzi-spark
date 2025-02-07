@@ -25,7 +25,7 @@ sudo kubectl get secret/console-sa-secret -n minio-operator -o json | jq -r '.da
 sudo kubectl create namespace minio-tenant-source
 sudo kubectl apply -f minio-tenant-source.yaml -n minio-tenant-source
 
-#exit 
+exit 
 
 sudo kubectl create namespace minio-tenant-dest
 sudo kubectl apply -f minio-tenant-dest.yaml -n minio-tenant-dest

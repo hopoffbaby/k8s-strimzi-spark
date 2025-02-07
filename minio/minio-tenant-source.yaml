@@ -62,8 +62,8 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: "2Gi"
-        #storageClassName: hostpath
+            storage: "5Gi"
+        storageClassName: local-path
       status: {}
     volumesPerServer: 2
   requestAutoCert: true
