@@ -130,6 +130,9 @@ sudo kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/
 # Interactive shell into source cluster mc
 # kubectl -n minio-tenant-source run mcadmin -ti --image=minio/mc:latest --rm=true --restart=Never -- /bin/sh
 
+# Longhorn
+# kubectl port-forward --kubeconfig k3skubeconfig.yaml svc/longhorn-frontend -n longhorn-system 9999:80
+
 # WTF - for some reason with k3s I cant get /bin/sh in the mc container - says command not found. Can use the existing minio container
 # sudo kubectl exec -it pod/source-tenant-pool-0-0 -n minio-tenant-source -- /bin/sh
 

@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: pure-fa-ome
+  name: pure-fa-ome-svc
+  namespace: observability-pure
+spec:
+  ports:
+  - name: http-metrics
+    port: 9490
+    protocol: TCP
+    targetPort: 9490
+  selector:
+    app: pure-fa-ome

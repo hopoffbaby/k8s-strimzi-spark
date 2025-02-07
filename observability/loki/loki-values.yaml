@@ -1,0 +1,20 @@
+deploymentMode: SingleBinary
+loki:
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: "filesystem"
+  auth_enabled: false
+singleBinary:
+  replicas: 1
+  persistence:
+    enabled: true
+    size: 250Gi
+read:
+  replicas: 0
+backend:
+  replicas: 0
+write:
+  replicas: 0
+limits_config:
+  retention_period: 168h # 1 week of logs.

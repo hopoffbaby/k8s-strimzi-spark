@@ -1,3 +1,5 @@
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
 sudo helm repo add longhorn https://charts.longhorn.io
 
 sudo helm repo update

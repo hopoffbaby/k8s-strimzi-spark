@@ -1,0 +1,7 @@
+kubelet-arg:
+  - "kube-reserved=cpu=200m,memory=600Mi,ephemeral-storage=2Gi" # removes this amount from allocatable, but it is not enforced as a limit by default
+  - "system-reserved=cpu=200m, memory=600Mi,ephemeral-storage=2Gi" # 600m is 500+eviction threashold
+  - "eviction-hard=memory.available<100Mi,nodefs.available<10%,imagefs.available<15%,nodefs.inodesFree<5%,imagefs.inodesFree<5%"
+  #- "kube-reserved-cgroup=kubereserved" # the cgroup used for kubernetes system daemons. recommended to be under top level cgroup. runtime.slice on systemd for example. This cgroup must already exist. this will be kubereserved.slice. Place under runtime.slice
+  #- "system-reserved-cgroup=systemreserved" # for sshd, udev, kernel, user login and os stuff. systemreserved.slice. place under system.slice. Must already be created.
+  #- "enforce-node-allocatable=pods,system-reserved-kube-reserved"

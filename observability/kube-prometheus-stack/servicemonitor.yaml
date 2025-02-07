@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: wordpress-servicemonitor
+  labels:
+    team: wordpress-example
+    release: neils-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: wordpress
+  endpoints:
+  - port: metrics
+
+    

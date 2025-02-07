@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: stress-test5
+spec:
+  template:
+    spec:
+      containers:
+      - name: stress-ng
+        image: polinux/stress-ng
+        args:
+        - "--random"
+        - "2"
+        - "--timeout"
+        - "5m"                 # Run for 5 minutes
+      restartPolicy: Never
+  backoffLimit: 4

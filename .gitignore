@@ -1,7 +1,14 @@
 minio/vagrant/.vagrant/
+rancher/.vagrant/
 wan/.vagrant/
 minio/data/id_rsa
 minio/data/id_rsa.pub
 kubernetes/k9s_linux_amd64.deb
 k3skubeconfig.yaml
 merged-config.yaml
+rancher/data/barf1-P-COR-ITD-RCA01-CA.crt
+rancher/tmp/cacerts.pem
+observability/kubeconfig.yaml
+observability/kube-prometheus-stack/prombackup/*
+observability/flashArray/secret.yaml
+LLMs/venv/*
